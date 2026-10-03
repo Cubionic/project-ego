@@ -1,0 +1,327 @@
+@import "tailwindcss";
+
+/* palette: black + shadow grey (#130F20) + white smoke, one accent (electric blue), rose only for "behind" */
+@theme {
+  --color-ink: #000000;
+  --color-night: #130f20;
+  --color-night-2: #1c1730;
+  --color-line: #2a2440;
+  --color-smoke: #f5f5f5;
+  --color-mute: #9893a8;
+  --color-dim: #7a748c;
+  --color-ego: #5b78ff;
+  --color-ego-soft: #8fa2ff;
+  --color-rose: #f0506e;
+
+  --font-sans: "DM Sans Variable", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Libre Baskerville", ui-serif, Georgia, serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  background: #000;
+  color-scheme: dark;
+}
+body {
+  background: var(--color-ink);
+  color: var(--color-smoke);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: var(--color-ego);
+  color: #000;
+}
+:focus-visible {
+  outline: 2px solid var(--color-ego-soft);
+  outline-offset: 3px;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.outline-type {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--color-smoke);
+}
+
+/* the purple lives in the base, never as a glow */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(70% 55% at 85% -10%, #130f20 0%, transparent 70%),
+    radial-gradient(50% 40% at -5% 100%, #0d0a17 0%, transparent 70%);
+}
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.hatch {
+  background: repeating-linear-gradient(135deg, var(--color-line) 0 2px, transparent 2px 6px);
+}
+
+/* ---------- motion ---------- */
+@keyframes rise {
+  from { transform: translateY(105%); }
+  to { transform: none; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes drift {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to { transform: scale(1.12) translate3d(-2%, -2.5%, 0); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@keyframes flame {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-1px) scale(1.06); }
+  70% { transform: translateY(0.5px) scale(0.97); }
+}
+@keyframes sweep {
+  from { transform: translateX(-101%); }
+  to { transform: translateX(101%); }
+}
+
+.view-enter {
+  animation: fade-up 0.55s var(--ease-out-expo) both;
+}
+.stagger > * {
+  animation: fade-up 0.6s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 120ms);
+}
+
+/* headline words rise once on load: the one orchestrated moment */
+.word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.word > span {
+  display: inline-block;
+  animation: rise 1s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i) * 70ms + 80ms);
+}
+
+.draw-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1.6s var(--ease-out-expo) forwards;
+}
+.pitch * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 2.6s var(--ease-out-expo) forwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+
+.marquee-track {
+  animation: marquee 70s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: grow-y 0.8s var(--ease-out-expo) both;
+}
+.bar-x {
+  transform-origin: left;
+  animation: grow-x 0.9s var(--ease-out-expo) both;
+}
+.art-drift {
+  animation: drift 24s ease-in-out infinite alternate;
+}
+.live-dot {
+  animation: blink 1.6s ease-in-out infinite;
+}
+.flame {
+  animation: flame 1.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+/* buttons: fill enters from the left on hover, push on press */
+.btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: color 0.25s var(--ease-out-expo), border-color 0.25s, transform 0.12s;
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-ego);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s var(--ease-out-expo);
+}
+.btn:hover:not(:disabled)::before,
+.btn:focus-visible::before {
+  transform: scaleX(1);
+}
+.btn:hover:not(:disabled),
+.btn:focus-visible {
+  color: #000;
+  border-color: var(--color-ego);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn.solid {
+  background: var(--color-ego);
+  color: #000;
+}
+.btn.solid::before {
+  background: var(--color-smoke);
+}
+
+.press {
+  transition: transform 0.12s, color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* task check: box fills, a line draws through every wrapped line of text */
+.task .check {
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.task button:hover .check {
+  border-color: var(--color-ego);
+}
+.task .check svg {
+  transform: scale(0);
+  transition: transform 0.35s var(--ease-out-expo);
+}
+.task[data-done="true"] .check {
+  background: var(--color-ego);
+  border-color: var(--color-ego);
+}
+.task[data-done="true"] .check svg {
+  transform: scale(1);
+}
+.task-text {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 60%;
+  background-size: 0% 1px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: background-size 0.55s var(--ease-out-expo), color 0.3s;
+}
+.task[data-done="true"] .task-text {
+  background-size: 100% 1px;
+  color: var(--color-mute);
+}
+
+.expand {
+  animation: fade-up 0.35s var(--ease-out-expo) both;
+}
+.flash {
+  animation: fade-up 0.4s var(--ease-out-expo) both;
+}
+
+/* inputs */
+.field {
+  width: 100%;
+  background: var(--color-ink);
+  border: 1px solid var(--color-line);
+  color: var(--color-smoke);
+  padding: 0.6rem 0.75rem;
+  font-size: 15px;
+  border-radius: 0;
+  transition: border-color 0.2s;
+}
+.field:hover {
+  border-color: #3b3458;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-ego);
+}
+.field::placeholder {
+  color: var(--color-dim);
+}
+select.field {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-mute) 50%),
+    linear-gradient(135deg, var(--color-mute) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+  .marquee-track,
+  .art-drift,
+  .live-dot,
+  .flame {
+    animation: none !important;
+  }
+}
