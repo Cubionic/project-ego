@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
-import { CHAPTERS, type BlockKey, type CustomTask, type DayTask, type Kind } from './data/plan'
+import { CHAPTERS, blockFor, type BlockKey, type CustomTask, type DayTask, type Kind } from './data/plan'
 import { addDays } from './lib/dates'
 
 export interface ChapterState {
@@ -187,7 +187,7 @@ export const useEgo = create<EgoState>()(
               ...(s.custom[next] ?? []),
               ...open.map((t) => ({
                 id: `${next}:c-${uid()}`,
-                block: t.block,
+                block: blockFor(t.kind, t.ch, t.block),
                 text: t.text,
                 hours: t.hours,
                 carried: true,
