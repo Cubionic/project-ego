@@ -160,13 +160,13 @@ export default function Tests() {
                         role="checkbox"
                         aria-checked={t.analysed}
                         onClick={() => toggleAnalysed(t.id)}
-                        className={`press border px-2 py-0.5 text-[12px] ${t.analysed ? 'border-ego text-ego-soft' : 'border-rose text-rose'}`}
+                        className={`press h-8 border px-2.5 text-[12px] ${t.analysed ? 'border-ego text-ego-soft' : 'border-rose text-rose'}`}
                       >
                         {t.analysed ? 'yes' : 'not yet'}
                       </button>
                     </td>
                     <td className="py-3 text-right">
-                      <button type="button" aria-label={`delete ${t.name}`} onClick={() => removeTest(t.id)} className="press text-dim hover:text-rose">
+                      <button type="button" aria-label={`delete ${t.name}`} onClick={() => removeTest(t.id)} className="press -mr-2 inline-grid h-8 w-8 place-items-center text-dim hover:text-rose">
                         <Trash2 size={15} />
                       </button>
                     </td>
@@ -198,6 +198,8 @@ function TestForm({ today }: { today: string }) {
     const total = n(f.p) + n(f.c) + n(f.m)
     if (!f.p && !f.c && !f.m) return setErr('enter at least one subject score.')
     if (total > max) return setErr(`total ${total} is more than the paper's ${max}.`)
+    const lostSum = n(f.ls) + n(f.lf) + n(f.lx)
+    if (lostSum > max - total) return setErr(`${lostSum} lost, but a ${total}/${max} paper only lost ${max - total}.`)
     addTest({
       name: f.name.trim().toLowerCase(),
       date: f.date || today,
@@ -264,7 +266,7 @@ function TestForm({ today }: { today: string }) {
         {field('lf', 'formula')}
         {field('lx', 'silly')}
       </div>
-      <label className="mt-5 flex cursor-pointer items-center gap-3 text-[14px]">
+      <label className="mt-5 flex min-h-8 cursor-pointer items-center gap-3 text-[14px]">
         <input type="checkbox" className="h-4 w-4 accent-[#5b78ff]" checked={f.analysed} onChange={(e) => setF({ ...f, analysed: e.target.checked })} />
         analysis done
       </label>

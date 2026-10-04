@@ -1,60 +1,107 @@
-import { useRef, useState } from 'react'
-import { ArrowUpRight, Download, ImagePlus, Trash2, Upload } from 'lucide-react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { ArrowUpRight, ChevronDown, Download, ImagePlus, Trash2, Upload } from 'lucide-react'
 import { RULES, SOURCES } from '../data/content'
+import { CHAPTERS, NEW_CHAPTERS, SUBJECT_NAME, type ChapterDef, type Subject } from '../data/plan'
+import { EXTRAS, LECTURES, LINKS, REVISIONS, TANDAV, clock, taskLink, yt, type Stamp } from '../data/videos'
 import { exportData, useEgo } from '../store'
 import { delArt, useArtUrls } from '../lib/art'
-import { studyDate } from '../lib/dates'
+import { accOf, pctOf } from '../lib/derive'
+import { fmtHours, studyDate } from '../lib/dates'
 import { hosted, saveFile } from '../lib/platform'
 import { useCloudStatus } from '../lib/cloud'
 import { addArtFiles } from '../components/ArtFrame'
-import { SectionTitle, Words } from '../components/ui'
+import { SectionTitle, Words, accTone } from '../components/ui'
+
+const SUBJECTS: Subject[] = ['phys', 'chem', 'math']
+const GROUP_TAG: Record<ChapterDef['group'], string> = { new: 'this month', weak: 'weak 11th', backlog: 'notes backlog' }
+const TANDAV_ORDER = ['phys11', 'phys12', 'pc', 'ioc', 'oc', 'math11', 'math12']
+const SECTIONS = [
+  ['lectures', 'lectures'],
+  ['notes', 'short notes'],
+  ['revision', 'revision'],
+  ['pyqs', 'pyqs'],
+  ['papers', 'papers'],
+  ['art', 'your art'],
+  ['data', 'data'],
+] as const
 
 export default function Hub() {
+  const chapters = useEgo((s) => s.chapters)
+  const left = NEW_CHAPTERS.reduce((a, c) => a + Math.max(0, (chapters[c.id]?.hours ?? 0) - (chapters[c.id]?.watched ?? 0)), 0)
+  const tandavHours = TANDAV_ORDER.reduce((a, k) => a + TANDAV[k].len, 0) / 3600
+  const jump = (id: string) => document.getElementById(`hub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
   return (
     <div className="pt-10 md:pt-14">
-      <h1 className="max-w-[18ch] font-serif text-[clamp(2.4rem,5.5vw,4.6rem)] leading-[1.06] tracking-[-0.025em]">
-        <Words text="everything you need." />
-      </h1>
+      <header className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <h1 className="font-serif text-[clamp(2.4rem,5.5vw,4.6rem)] leading-[1.06] tracking-[-0.025em] lg:col-span-6">
+          <Words text="everything, one tap away." />
+        </h1>
+        <dl className="grid grid-cols-3 gap-6 self-end lg:col-span-6">
+          <Stat label="lecture left" value={`${fmtHours(Math.round(left * 10) / 10)}h`} sub={`${fmtHours(Math.round(left * 15) / 10)}h at 1.5x`} />
+          <Stat label="mahatandav" value={`${Math.round(tandavHours)}h`} sub={`${TANDAV_ORDER.length} videos`} />
+          <Stat label="pyq pages" value={String(Object.values(LINKS).reduce((a, l) => a + l.pyq.length, 0))} sub={`${Object.keys(LINKS).length} chapters`} />
+        </dl>
+      </header>
 
-      <section className="mt-16 grid grid-cols-1 gap-16 lg:grid-cols-12">
-        <div className="lg:col-span-5">
-          <SectionTitle>sources</SectionTitle>
-          {SOURCES.map((g) => (
-            <div key={g.group} className="mb-10">
-              <h3 className="text-[13px] text-mute">{g.group}</h3>
-              <ul className="mt-2">
-                {g.items.map((s) => (
-                  <li key={s.name} className="border-t border-line">
-                    {s.url ? (
-                      <a href={s.url} target="_blank" rel="noreferrer" className="group flex items-start justify-between gap-4 py-3.5">
-                        <span>
-                          <span className="block text-[15px] group-hover:text-ego-soft">{s.name}</span>
-                          {s.note ? <span className="mt-0.5 block text-[12px] text-dim">{s.note}</span> : null}
-                        </span>
-                        <ArrowUpRight size={16} className="mt-0.5 shrink-0 text-dim transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ego-soft" />
-                      </a>
-                    ) : (
-                      <div className="py-3.5">
-                        <span className="block text-[15px]">{s.name}</span>
-                        {s.note ? <span className="mt-0.5 block text-[12px] text-dim">{s.note}</span> : null}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+      <nav aria-label="hub sections" className="sticky top-16 z-20 -mx-4 mt-10 flex gap-2 overflow-x-auto border-b border-line bg-ink px-4 py-3 md:mx-0 md:px-0">
+        {SECTIONS.map(([id, name]) => (
+          <button key={id} type="button" onClick={() => jump(id)} className="press min-h-8 shrink-0 border border-line px-3 text-[13px] text-mute hover:border-ego hover:text-smoke">
+            {name}
+          </button>
+        ))}
+      </nav>
 
-        <div className="lg:col-span-7">
-          <SectionTitle>the rules</SectionTitle>
-          <div className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
+      <Section id="lectures" title="lectures" aside="chapter one-shots. the resume link starts where your watched hours end.">
+        {SUBJECTS.map((s) => (
+          <LectureFold key={s} subject={s} />
+        ))}
+      </Section>
+
+      <Section id="notes" title="short notes" aside="mahatandav 2026, pw jee. a whole subject per video. marked parts are in your plan.">
+        {TANDAV_ORDER.map((k) => (
+          <TandavFold key={k} k={k} />
+        ))}
+      </Section>
+
+      <Section id="revision" title="revision" aside="full-chapter revisions, 20 to 100 minutes, and question marathons.">
+        {SUBJECTS.map((s) => (
+          <RevisionFold key={s} subject={s} />
+        ))}
+        <Fold title="question marathons" meta={`${EXTRAS.length} videos`}>
+          <ul>
+            {EXTRAS.map((x) => (
+              <Row key={x.video.id} name={x.name} sub={`${x.note}, ${x.video.by}`}>
+                <Ext href={yt(x.video.id)}>{clock(x.video.len)}</Ext>
+              </Row>
+            ))}
+          </ul>
+        </Fold>
+      </Section>
+
+      <Section id="pyqs" title="pyqs" aside="examside chapter pages: every jee main shift, with solutions. your accuracy from quick log.">
+        {SUBJECTS.map((s) => (
+          <PyqFold key={s} subject={s} />
+        ))}
+        <Fold title="pyq banks" meta={`${SOURCES[0].items.length} sites`}>
+          <SourceList items={SOURCES[0].items} />
+        </Fold>
+      </Section>
+
+      <Section id="papers" title="papers and notes" aside="full shift papers for mock days, and your own material.">
+        {SOURCES.slice(1).map((g) => (
+          <Fold key={g.group} title={g.group} meta={`${g.items.length} ${g.items.length === 1 ? 'link' : 'links'}`}>
+            <SourceList items={g.items} />
+          </Fold>
+        ))}
+        <Fold title="the rules" meta={`${RULES.length} sets`}>
+          <div className="grid grid-cols-1 gap-x-10 gap-y-8 pt-2 sm:grid-cols-2 lg:grid-cols-3">
             {RULES.map((r) => (
               <div key={r.title}>
-                <h3 className="font-serif text-[19px]">{r.title}</h3>
-                <ul className="mt-3 space-y-2.5">
+                <h3 className="text-[14px] text-smoke">{r.title}</h3>
+                <ul className="mt-2 space-y-1.5">
                   {r.lines.map((l) => (
-                    <li key={l} className="border-l border-line pl-3 text-[14px] leading-relaxed text-mute">
+                    <li key={l} className="border-l border-line pl-3 text-[13px] leading-relaxed text-mute">
                       {l}
                     </li>
                   ))}
@@ -62,12 +109,14 @@ export default function Hub() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </Fold>
+      </Section>
 
-      <ArtBoard />
+      <div id="hub-art" className="scroll-mt-32">
+        <ArtBoard />
+      </div>
 
-      <section className="mt-20 grid grid-cols-1 gap-16 lg:grid-cols-2">
+      <section id="hub-data" className="mt-20 grid scroll-mt-32 grid-cols-1 gap-16 lg:grid-cols-2">
         <DataTools />
         <div>
           <SectionTitle>shortcuts</SectionTitle>
@@ -91,6 +140,248 @@ export default function Hub() {
   )
 }
 
+/* ---------- building blocks ---------- */
+
+function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="border-t border-line pt-3">
+      <dt className="text-[12px] text-mute">{label}</dt>
+      <dd className="mt-1 num text-[26px] leading-tight">{value}</dd>
+      <dd className="num text-[12px] text-dim">{sub}</dd>
+    </div>
+  )
+}
+
+function Section({ id, title, aside, children }: { id: string; title: string; aside: string; children: ReactNode }) {
+  return (
+    <section id={`hub-${id}`} className="mt-16 scroll-mt-32">
+      <h2 className="font-serif text-[26px] leading-[1.15] tracking-[-0.01em] md:text-[30px]">{title}</h2>
+      <p className="mt-1 mb-5 max-w-[70ch] text-[13px] text-mute">{aside}</p>
+      <div className="border-b border-line">{children}</div>
+    </section>
+  )
+}
+
+function Fold({ title, meta, children, open }: { title: ReactNode; meta?: ReactNode; children: ReactNode; open?: boolean }) {
+  return (
+    <details className="fold border-t border-line" open={open || undefined}>
+      <summary className="flex min-h-12 items-center gap-4 py-2 hover:text-ego-soft">
+        <span className="text-[16px]">{title}</span>
+        <span className="ml-auto text-right num text-[12px] text-mute">{meta}</span>
+        <ChevronDown size={16} className="chev shrink-0 text-dim" aria-hidden />
+      </summary>
+      <div className="pb-5">{children}</div>
+    </details>
+  )
+}
+
+function Ext({ href, children, quiet }: { href: string; children: ReactNode; quiet?: boolean }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`inline-flex min-h-8 items-center gap-1 whitespace-nowrap border px-2.5 text-[13px] num ${quiet ? 'border-line text-mute hover:border-ego hover:text-smoke' : 'border-ego/60 text-ego-soft hover:border-ego hover:text-smoke'}`}
+    >
+      {children}
+      <ArrowUpRight size={13} aria-hidden />
+    </a>
+  )
+}
+
+function Row({ name, sub, children }: { name: ReactNode; sub?: ReactNode; children?: ReactNode }) {
+  return (
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line/60 py-2.5 first:border-t-0">
+      <div className="min-w-0 flex-1 basis-48">
+        <p className="text-[14px] text-smoke">{name}</p>
+        {sub ? <p className="mt-0.5 text-[12px] text-dim">{sub}</p> : null}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
+    </li>
+  )
+}
+
+function StampGrid({ id, stamps, mark }: { id: string; stamps: Stamp[]; mark?: Set<number> }) {
+  return (
+    <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+      {stamps.map(([t, label]) => {
+        const m = mark?.has(t)
+        return (
+          <li key={t}>
+            <a href={yt(id, t)} target="_blank" rel="noreferrer" className="group flex min-h-8 items-baseline gap-3 py-1 text-[13px]">
+              <span className={`num w-[4.2rem] shrink-0 ${m ? 'text-ego-soft' : 'text-dim'}`}>{clock(t)}</span>
+              <span className={`group-hover:text-ego-soft ${m ? 'text-smoke' : 'text-mute'}`}>
+                {m ? <span className="mr-1.5 inline-block h-1.5 w-1.5 translate-y-[-2px] bg-ego" aria-label="in your plan" /> : null}
+                {label}
+              </span>
+            </a>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function SourceList({ items }: { items: { name: string; url?: string; note?: string }[] }) {
+  return (
+    <ul>
+      {items.map((s) => (
+        <Row key={s.name} name={s.name} sub={s.note}>
+          {s.url ? <Ext href={s.url} quiet>open</Ext> : null}
+        </Row>
+      ))}
+    </ul>
+  )
+}
+
+/* ---------- sections ---------- */
+
+function LectureFold({ subject }: { subject: Subject }) {
+  const chapters = useEgo((s) => s.chapters)
+  const list = NEW_CHAPTERS.filter((c) => c.subject === subject)
+  const leftOf = (c: ChapterDef) => Math.max(0, (chapters[c.id]?.hours ?? 0) - (chapters[c.id]?.watched ?? 0))
+  const left = list.reduce((a, c) => a + leftOf(c), 0)
+  return (
+    <Fold
+      title={SUBJECT_NAME[subject]}
+      meta={
+        <>
+          {fmtHours(Math.round(left * 10) / 10)}h left <span className="text-dim">/ {fmtHours(Math.round(left * 15) / 10)}h at 1.5x</span>
+        </>
+      }
+    >
+      <ul>
+        {list.map((c) => {
+          const st = chapters[c.id]
+          const l = LINKS[c.id]
+          const v = l?.lecture ? LECTURES[l.lecture] : undefined
+          const lt = leftOf(c)
+          const resume = taskLink('lecture', c.id, st?.watched ?? 0)
+          const stamps = v?.stamps?.filter(([t]) => t >= (l?.lectureFrom ?? 0) && t < (l?.lectureTo ?? Infinity))
+          return (
+            <li key={c.id} className="border-t border-line/60 py-2.5 first:border-t-0">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div className="min-w-0 flex-1 basis-48">
+                  <p className={`text-[14px] ${st?.closedOn ? 'text-mute' : 'text-smoke'}`}>{c.name}</p>
+                  <p className="mt-0.5 num text-[12px] text-dim">
+                    {fmtHours(st?.hours ?? c.hours)}h long,{' '}
+                    {lt > 0 ? (
+                      <>
+                        <span className="text-mute">{fmtHours(Math.round(lt * 100) / 100)}h left</span>, {fmtHours(Math.round(lt * 150) / 100)}h at 1.5x
+                      </>
+                    ) : (
+                      'watched'
+                    )}
+                    {v ? `, ${v.by}` : ''}
+                  </p>
+                </div>
+                {v && resume && lt > 0 ? <Ext href={resume.href}>{resume.label}</Ext> : v ? <Ext href={yt(v.id, l?.lectureFrom)} quiet>lecture</Ext> : <span className="text-[12px] text-dim">no lecture linked</span>}
+              </div>
+              {v && stamps?.length ? (
+                <details className="fold mt-1">
+                  <summary className="inline-flex min-h-8 items-center gap-1.5 text-[12px] text-dim hover:text-ego-soft">
+                    {stamps.length} topics <ChevronDown size={13} className="chev" aria-hidden />
+                  </summary>
+                  <div className="pt-1 pb-2">
+                    <StampGrid id={v.id} stamps={stamps} />
+                  </div>
+                </details>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
+    </Fold>
+  )
+}
+
+function TandavFold({ k }: { k: string }) {
+  const v = TANDAV[k]
+  const mark = useMemo(() => {
+    const m = new Set<number>()
+    for (const l of Object.values(LINKS)) for (const [vid, t] of l.tandav ?? []) if (vid === k) m.add(t)
+    return m
+  }, [k])
+  return (
+    <Fold
+      title={v.name}
+      meta={
+        <>
+          {clock(v.len)} <span className="text-dim">/ {v.stamps?.length ?? 0} parts{mark.size ? `, ${mark.size} in plan` : ''}</span>
+        </>
+      }
+    >
+      <div className="mb-3">
+        <Ext href={yt(v.id)} quiet>
+          whole video
+        </Ext>
+      </div>
+      <StampGrid id={v.id} stamps={v.stamps ?? []} mark={mark} />
+    </Fold>
+  )
+}
+
+function RevisionFold({ subject }: { subject: Subject }) {
+  const list = CHAPTERS.filter((c) => c.subject === subject && (LINKS[c.id]?.revision || LINKS[c.id]?.tandav?.length))
+  return (
+    <Fold title={SUBJECT_NAME[subject]} meta={`${list.length} chapters`}>
+      <ul>
+        {list.map((c) => {
+          const l = LINKS[c.id]
+          const r = l.revision ? REVISIONS[l.revision] : undefined
+          return (
+            <Row key={c.id} name={c.name} sub={GROUP_TAG[c.group]}>
+              {r ? <Ext href={yt(r.id)}>{clock(r.len)}</Ext> : null}
+              {l.tandav?.map(([vid, t, label]) => (
+                <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet>
+                  {l.tandav!.length > 1 ? label : 'mahatandav'} {clock(t)}
+                </Ext>
+              ))}
+            </Row>
+          )
+        })}
+      </ul>
+    </Fold>
+  )
+}
+
+function PyqFold({ subject }: { subject: Subject }) {
+  const pyq = useEgo((s) => s.pyq)
+  const acc = useMemo(() => accOf(pyq), [pyq])
+  const list = CHAPTERS.filter((c) => c.subject === subject && LINKS[c.id])
+  const done = list.reduce((a, c) => a + (acc[c.id]?.att ?? 0), 0)
+  return (
+    <Fold title={SUBJECT_NAME[subject]} meta={`${list.length} chapters, ${done} logged`}>
+      <ul>
+        {list.map((c) => {
+          const a = acc[c.id]
+          const p = pctOf(a)
+          const pages = LINKS[c.id].pyq
+          return (
+            <Row
+              key={c.id}
+              name={c.name}
+              sub={
+                <>
+                  {GROUP_TAG[c.group]}, <span className={accTone(p)}>{p == null ? 'none logged' : `${p}% on ${a!.att}`}</span>
+                </>
+              }
+            >
+              {pages.map((href) => (
+                <Ext key={href} href={href} quiet={p != null && p >= 80}>
+                  {pages.length > 1 ? href.split('/').pop()!.replace(/-/g, ' ') : 'pyqs'}
+                </Ext>
+              ))}
+            </Row>
+          )
+        })}
+      </ul>
+    </Fold>
+  )
+}
+
+/* ---------- art and data, unchanged ---------- */
+
 function ArtBoard() {
   const ids = useEgo((s) => s.art)
   const setArt = useEgo((s) => s.setArt)
@@ -103,7 +394,7 @@ function ArtBoard() {
     <section className="mt-20">
       <SectionTitle
         aside={
-          <label className="flex cursor-pointer items-center gap-2">
+          <label className="flex min-h-8 cursor-pointer items-center gap-2">
             <input type="checkbox" className="h-4 w-4 accent-[#5b78ff]" checked={duo} onChange={(e) => setDuo(e.target.checked)} />
             duotone
           </label>

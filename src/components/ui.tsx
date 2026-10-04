@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { CHAPTERS, SUBJECT_NAME, type Subject } from '../data/plan'
 
@@ -77,6 +77,8 @@ export function Stepper({
     return n
   }
   const id = `st-${label.replace(/\W+/g, '-')}`
+  // keep what is being typed ("9." or "") until blur, so a decimal or a cleared field is not snapped back
+  const [draft, setDraft] = useState<string | null>(null)
   return (
     <div>
       <label htmlFor={id} className="block text-[12px] text-mute mb-2">
@@ -85,7 +87,7 @@ export function Stepper({
       <div className="flex items-stretch border border-line">
         <button
           type="button"
-          className="press px-2.5 text-mute hover:text-smoke hover:bg-night-2"
+          className="press min-h-9 min-w-9 px-2.5 text-mute hover:text-smoke hover:bg-night-2"
           aria-label={`decrease ${label}`}
           onClick={() => onChange(clamp(value - step))}
         >
@@ -95,14 +97,19 @@ export function Stepper({
           id={id}
           inputMode="decimal"
           type="number"
-          value={value}
-          onChange={(e) => onChange(clamp(Number(e.target.value) || 0))}
+          value={draft ?? value}
+          onChange={(e) => {
+            const raw = e.target.value
+            setDraft(raw)
+            if (raw.trim() !== '' && !Number.isNaN(Number(raw))) onChange(clamp(Number(raw)))
+          }}
+          onBlur={() => setDraft(null)}
           className="num w-full min-w-0 bg-transparent text-center text-[17px] py-2 focus:outline-none"
         />
         {suffix ? <span className="self-center pr-2 text-[12px] text-dim">{suffix}</span> : null}
         <button
           type="button"
-          className="press px-2.5 text-mute hover:text-smoke hover:bg-night-2"
+          className="press min-h-9 min-w-9 px-2.5 text-mute hover:text-smoke hover:bg-night-2"
           aria-label={`increase ${label}`}
           onClick={() => onChange(clamp(value + step))}
         >
@@ -116,7 +123,7 @@ export function Stepper({
               key={q}
               type="button"
               onClick={() => onChange(clamp(value + q))}
-              className="press num border border-line px-2 py-0.5 text-[12px] text-mute hover:border-ego hover:text-ego-soft"
+              className="press num h-8 min-w-10 border border-line px-2 text-[12px] text-mute hover:border-ego hover:text-ego-soft"
             >
               +{q}
             </button>

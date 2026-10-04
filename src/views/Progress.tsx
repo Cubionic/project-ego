@@ -23,7 +23,10 @@ export default function Progress() {
   const burnDays = dateRange(START, CLOSE)
   const planned = burnDays.map((d) => NEW_CHAPTERS.filter((c) => PLANNED_CLOSE[c.id] && PLANNED_CLOSE[c.id] <= d).length)
   const actual = burnDays.map((d) => (d > today ? null : NEW_CHAPTERS.filter((c) => chapters[c.id]?.closedOn && (chapters[c.id].closedOn as string) <= d).length))
-  const behind = (planned[burnDays.indexOf(today)] ?? planned[planned.length - 1]) - (actual.filter((v) => v != null).pop() ?? 0)
+  // compare against what the plan wanted closed by yesterday: today's closes are still in play
+  const plannedByYesterday = NEW_CHAPTERS.filter((c) => PLANNED_CLOSE[c.id] && PLANNED_CLOSE[c.id] < today).length
+  const closedSoFar = NEW_CHAPTERS.filter((c) => chapters[c.id]?.closedOn && (chapters[c.id].closedOn as string) <= today).length
+  const behind = plannedByYesterday - closedSoFar
 
   // last 21 study days
   const from = (() => {
@@ -32,6 +35,7 @@ export default function Progress() {
   })()
   const recent = dateRange(from, today > EXAM ? EXAM : today)
   const recentHist = recent.map((d) => hist.find((h) => h.date === d))
+  const avgPlanned = Math.round(recentHist.reduce((a, h) => a + (h?.planned ?? 0), 0) / Math.max(1, recentHist.length))
 
   const [filter, setFilter] = useState<Filter>('all')
   const inFilter = (ch: string) => filter === 'all' || chapterById[ch]?.subject === filter
@@ -91,7 +95,7 @@ export default function Progress() {
             ariaLabel="hours earned per day"
             labels={recent.map(fmtShort)}
             values={recentHist.map((h) => Math.round((h?.hours ?? 0) * 10) / 10)}
-            refs={[{ y: 12, label: '12h planned' }]}
+            refs={[{ y: avgPlanned, label: `${avgPlanned}h planned` }]}
             highlight={recent.length - 1}
             unit="h"
           />
@@ -107,7 +111,7 @@ export default function Progress() {
                     aria-selected={filter === f}
                     type="button"
                     onClick={() => setFilter(f)}
-                    className={`press border px-2.5 py-1 text-[12px] ${filter === f ? 'border-ego text-ego-soft' : 'border-line text-mute hover:text-smoke'}`}
+                    className={`press h-8 border px-2.5 text-[12px] ${filter === f ? 'border-ego text-ego-soft' : 'border-line text-mute hover:text-smoke'}`}
                   >
                     {f === 'all' ? 'all' : SUBJECT_NAME[f]}
                   </button>

@@ -325,3 +325,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     animation: none !important;
   }
 }
+
+/* hub dropdowns: native details, square chevron that flips when open */
+.fold > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.fold > summary::-webkit-details-marker {
+  display: none;
+}
+.fold[open] > summary .chev {
+  transform: rotate(180deg);
+}

@@ -4,7 +4,7 @@ import { LINES } from './data/content'
 import { useEgo } from './store'
 import { historyOf, streakOf } from './lib/derive'
 import { diffDays, studyDate } from './lib/dates'
-import { isTyping } from './lib/hooks'
+import { isTyping, useNow } from './lib/hooks'
 import { Footer, MobileNav, Ticker, TopBar, VIEWS, type View } from './components/chrome'
 import Today from './views/Today'
 import Syllabus from './views/Syllabus'
@@ -43,7 +43,8 @@ export default function App() {
   const custom = useEgo((s) => s.custom)
   const chapters = useEgo((s) => s.chapters)
   const pyq = useEgo((s) => s.pyq)
-  const today = studyDate()
+  // re-render on a timer so the streak and countdown roll over at 04:00 with the tab open
+  const today = studyDate(useNow(60_000))
   const streak = useMemo(() => {
     const end = today > EXAM ? EXAM : today
     return streakOf(historyOf({ done, custom, chapters, pyq }, end, today), today).current

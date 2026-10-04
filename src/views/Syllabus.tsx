@@ -4,6 +4,7 @@ import { useEgo, type ChapterState } from '../store'
 import { accOf, pctOf } from '../lib/derive'
 import { diffDays, fmtHours, fmtShort, studyDate } from '../lib/dates'
 import { Stepper, Words, accTone } from '../components/ui'
+import { LINKS, REVISIONS, taskLink, yt } from '../data/videos'
 
 export default function Syllabus() {
   const chapters = useEgo((s) => s.chapters)
@@ -129,6 +130,7 @@ function ChapterRow({ def, st, acc, open, onToggle }: { def: ChapterDef; st: Cha
               {st.closedOn ? 'reopen chapter' : 'close chapter'}
             </button>
           </div>
+          <ChapterLinksRow id={def.id} watched={st.watched} />
           {overCap ? <p className="col-span-2 text-[12px] text-rose">{st.notes - def.cap} over the page cap. you will not revise pages you cannot skim in 15 minutes.</p> : null}
           {p != null && p < 60 && !st.closedOn ? <p className="col-span-2 text-[12px] text-rose">under 60%. this one is not ready to close.</p> : null}
         </div>
@@ -165,7 +167,7 @@ function SideList({ title, note, items }: { title: string; note: string; items: 
                 <button
                   type="button"
                   onClick={() => update(c.id, { notes: (chapters[c.id]?.notes ?? 0) + 1 })}
-                  className="press mt-0.5 text-[12px] text-dim hover:text-ego-soft"
+                  className="press -mr-2 inline-flex h-8 items-center px-2 text-[12px] text-dim hover:text-ego-soft"
                   aria-label={`add a note page for ${c.name}`}
                 >
                   + page
@@ -179,3 +181,23 @@ function SideList({ title, note, items }: { title: string; note: string; items: 
   )
 }
 
+
+function ChapterLinksRow({ id, watched }: { id: string; watched: number }) {
+  const l = LINKS[id]
+  if (!l) return null
+  const lecture = taskLink('lecture', id, watched)
+  const links = [
+    lecture,
+    l.revision ? { href: yt(REVISIONS[l.revision].id), label: 'revision' } : null,
+    ...l.pyq.map((href, i) => ({ href, label: l.pyq.length > 1 ? `pyqs ${i + 1}` : 'pyqs' })),
+  ].filter((x): x is { href: string; label: string } => !!x)
+  return (
+    <div className="col-span-2 flex flex-wrap gap-2">
+      {links.map((x) => (
+        <a key={x.href + x.label} href={x.href} target="_blank" rel="noreferrer" className="btn inline-flex min-h-8 items-center border border-line px-3 text-[13px] text-mute hover:text-smoke">
+          {x.label}
+        </a>
+      ))}
+    </div>
+  )
+}

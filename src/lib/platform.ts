@@ -1,4 +1,4 @@
-// When the app runs as a hosted claude.ai artifact, window.claude.use() unlocks a few platform features.
+// When the app runs as a hosted claude.ai artifact, window.claude.use() turns on a few platform features.
 // Everywhere else (npm run dev, your own hosting) window.claude is absent and the plain browser path runs.
 type UseFn = (name: string) => Promise<unknown>
 

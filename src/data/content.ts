@@ -17,25 +17,27 @@ export interface Source {
   note?: string
 }
 
+// group 0 is shown under pyqs, the rest under papers and notes. lecture and revision videos live in videos.ts.
 export const SOURCES: { group: string; items: Source[] }[] = [
   {
-    group: 'lectures',
+    group: 'pyq banks',
     items: [
-      { name: 'Organic Chemistry', url: 'https://www.youtube.com/playlist?list=PLxyGaR3hEy3jWivnsFTb5uvzpHZK3qvDj' },
-      { name: 'Physics', url: 'https://www.youtube.com/playlist?list=PLOhy7gH-Nr7U' },
-      { name: 'Physical Chemistry', url: 'https://www.youtube.com/playlist?list=PLePG024ZPZfA' },
-      { name: 'IOC', url: 'https://www.youtube.com/playlist?list=PLBUjfLPfdxOY' },
-      { name: 'Eduniti List', url: 'https://drive.google.com/file/d/102Np_tW2VKAMvGVUpeovsLpeUYjNMQsf/view', note: 'the lectures inside the click link' },
-      { name: 'pw lakshya jee 2025, physics', note: 'only for chapters manzil skips or teaches badly' },
+      { name: 'examside, jee main', url: 'https://questions.examside.com/past-years/jee/jee-main', note: 'chapterwise and shiftwise, with solutions' },
+      { name: 'marks app', url: 'https://web.getmarks.app/', note: 'chapterwise pyqs with a timer and accuracy' },
     ],
   },
   {
-    group: 'practice',
+    group: 'full shift papers',
     items: [
-      { name: 'chapterwise jee main pyqs', note: 'a pyq bank app such as quizrr. the end of every chapter.' },
-      { name: 'allen module, exercise 1', note: 'skip in october. pyqs give more marks per hour for main.' },
-      { name: 'pc exercise 4', note: 'november to january, only chapters under 80% pyq accuracy' },
-      { name: 'actual jm shift papers', note: 'your core mocks. save the latest 2026 shifts for january.' },
+      { name: 'nta question paper archive', url: 'https://jeemain.nta.nic.in/document-category/archive/', note: 'official papers and keys' },
+      { name: 'mathongo previous year papers', url: 'https://www.mathongo.com/iit-jee/jee-main-previous-year-question-paper', note: 'shiftwise papers with answer keys' },
+    ],
+  },
+  {
+    group: 'your material',
+    items: [
+      { name: 'eduniti list', url: 'https://drive.google.com/file/d/102Np_tW2VKAMvGVUpeovsLpeUYjNMQsf/view', note: 'the lectures inside the click link' },
+      { name: 'pw lakshya jee 2025, physics', note: 'only for chapters the one-shots skip or teach badly' },
     ],
   },
 ]

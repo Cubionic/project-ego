@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, CornerDownRight, Plus, X } from 'lucide-react'
+import { ArrowUpRight, Check, ChevronLeft, ChevronRight, CornerDownRight, Plus, X } from 'lucide-react'
 import {
   BLOCKS,
   BREAKS,
@@ -22,13 +22,14 @@ import { accOf, pctOf, statsOf, tasksOf } from '../lib/derive'
 import { addDays, diffDays, fmtClock, fmtDay, fmtHours, minutesIntoStudyDay, studyDate, weekday } from '../lib/dates'
 import { isTyping, useNow } from '../lib/hooks'
 import { ArtFrame } from '../components/ArtFrame'
+import { taskLink } from '../data/videos'
 import { ChapterSelect, CountUp, Stepper, Words, accTone } from '../components/ui'
 
 function headline(pct: number, rel: 'past' | 'today' | 'future', date: string) {
   if (rel === 'future') return date === CLOSE ? 'the day the syllabus closes.' : 'tomorrow is already decided.'
   if (rel === 'past') return pct >= KEEP ? 'that day was yours.' : 'that one got away. not the next.'
-  if (pct === 0) return 'nobody scores for you.'
-  if (pct < 40) return 'warm-up is over. take the next block.'
+  if (pct === 0) return 'nobody will score marks for you.'
+  if (pct < 40) return 'you wont be a true egoist if you stay like this.'
   if (pct < KEEP) return 'half a day is still a loss.'
   if (pct < 100) return 'finish it. the last block counts too.'
   return 'today belongs to you.'
@@ -106,11 +107,11 @@ export default function Today() {
         <div className="flex flex-col lg:col-span-7">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px]">
             <div className="flex items-center border border-line">
-              <button type="button" aria-label="previous day" onClick={() => go(addDays(date, -1))} className="press px-2 py-1.5 text-mute hover:text-smoke disabled:opacity-30" disabled={date <= START}>
+              <button type="button" aria-label="previous day" onClick={() => go(addDays(date, -1))} className="press grid h-8 w-8 place-items-center text-mute hover:text-smoke disabled:opacity-30" disabled={date <= START}>
                 <ChevronLeft size={16} />
               </button>
-              <span className="min-w-[11.5rem] px-2 text-center text-smoke">{fmtDay(date)}</span>
-              <button type="button" aria-label="next day" onClick={() => go(addDays(date, 1))} className="press px-2 py-1.5 text-mute hover:text-smoke disabled:opacity-30" disabled={date >= EXAM}>
+              <span className="min-w-[10.5rem] px-1 text-center text-smoke">{fmtDay(date)}</span>
+              <button type="button" aria-label="next day" onClick={() => go(addDays(date, 1))} className="press grid h-8 w-8 place-items-center text-mute hover:text-smoke disabled:opacity-30" disabled={date >= EXAM}>
                 <ChevronRight size={16} />
               </button>
             </div>
@@ -123,8 +124,11 @@ export default function Today() {
                 </>
               ) : null}
             </span>
+            <span className="text-mute lg:hidden">
+              <span className="num text-smoke">{big.n}</span> {big.label.replace(' the syllabus', '')}
+            </span>
             {rel !== 'today' ? (
-              <button type="button" onClick={() => go(today)} className="text-ego-soft underline-offset-4 hover:underline">
+              <button type="button" onClick={() => go(today)} className="min-h-8 text-ego-soft underline-offset-4 hover:underline">
                 back to today
               </button>
             ) : null}
@@ -178,7 +182,7 @@ export default function Today() {
           </div>
         </div>
 
-        <div className="relative lg:col-span-5">
+        <div className="relative hidden lg:col-span-5 lg:block">
           <div className="ml-auto w-full max-w-[460px] lg:max-w-none">
             <ArtFrame seed={Math.max(0, dayN)} />
           </div>
@@ -256,6 +260,10 @@ export default function Today() {
           </div>
         </aside>
       </section>
+
+      <div className="mx-auto mt-16 max-w-[460px] lg:hidden">
+        <ArtFrame seed={Math.max(0, dayN)} />
+      </div>
     </div>
   )
 }
@@ -349,12 +357,56 @@ function BlockSection({
   const [hours, setHours] = useState(0.5)
   const addCustom = useEgo((s) => s.addCustom)
   const removeCustom = useEgo((s) => s.removeCustom)
+  const chapters = useEgo((s) => s.chapters)
   const submit = () => {
     if (!text.trim()) return
     addCustom(date, block.key, text.trim().toLowerCase(), hours)
     setText('')
     setAdding(false)
   }
+  const addForm = (
+    <form
+      className="expand mt-3 grid grid-cols-[1fr_88px_auto] gap-2"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+    >
+      <label className="sr-only" htmlFor={`add-${block.key}`}>
+        target
+      </label>
+      <input id={`add-${block.key}`} autoFocus className="field" placeholder="what will you finish?" value={text} onChange={(e) => setText(e.target.value)} />
+      <label className="sr-only" htmlFor={`h-${block.key}`}>
+        hours
+      </label>
+      <input id={`h-${block.key}`} className="field num" type="number" step="0.25" min="0" value={hours} onChange={(e) => setHours(Number(e.target.value) || 0)} />
+      <button type="submit" className="btn solid px-4 text-[14px]">
+        add
+      </button>
+    </form>
+  )
+
+  // an empty block is one line, so the blocks that have work stay on the first screen
+  if (!tasks.length)
+    return (
+      <section ref={refEl} className={`scroll-mt-24 border-t py-4 ${isNow ? 'border-ego' : 'border-line'}`}>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2 className="font-serif text-[20px] leading-tight">{name}</h2>
+          <span className="num text-[13px] text-mute">
+            {fmtClock(block.start)} to {fmtClock(block.end)}
+          </span>
+          {isNow ? <span className="text-[13px] text-ego-soft">happening now</span> : null}
+          <span className="text-[13px] text-dim">nothing planned.</span>
+          {adding ? null : (
+            <button type="button" onClick={() => setAdding(true)} className="inline-flex min-h-8 items-center gap-1.5 text-[13px] text-dim hover:text-ego-soft">
+              <Plus size={14} /> add a target
+            </button>
+          )}
+        </div>
+        {adding ? addForm : null}
+      </section>
+    )
+
   return (
     <section ref={refEl} className={`scroll-mt-24 grid grid-cols-1 gap-x-8 border-t py-8 md:grid-cols-[200px_1fr] ${isNow ? 'border-ego' : 'border-line'}`}>
       <header className="mb-4 md:mb-0">
@@ -376,6 +428,7 @@ function BlockSection({
             {tasks.map((t, i) => {
               const d = !!done[t.id]
               const m = !!moved[t.id] && !d
+              const link = taskLink(t.kind, t.ch, t.ch ? chapters[t.ch]?.watched : 0)
               return (
                 <li key={t.id} className="task grid grid-cols-[32px_1fr_auto] gap-x-2 py-2.5" data-done={d} style={{ ['--i' as string]: i }}>
                   <button
@@ -400,11 +453,23 @@ function BlockSection({
                         {t.detail}
                       </p>
                     ) : null}
+                    {link && !d ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-1 inline-flex min-h-8 items-center gap-1 text-[13px] text-ego-soft underline-offset-4 hover:underline"
+                      >
+                        {link.label}
+                        <ArrowUpRight size={13} aria-hidden />
+                      </a>
+                    ) : null}
                   </div>
                   <div className="flex items-start gap-1 pt-[6px] text-[13px] text-mute">
                     {t.hours > 0 ? <span className="num">{fmtHours(t.hours)}h</span> : null}
                     {t.custom ? (
-                      <button type="button" aria-label={`remove ${t.text}`} onClick={() => removeCustom(date, t.id)} className="press -mt-1 grid h-7 w-7 place-items-center text-dim hover:text-rose">
+                      <button type="button" aria-label={`remove ${t.text}`} onClick={() => removeCustom(date, t.id)} className="press -mt-1.5 grid h-8 w-8 place-items-center text-dim hover:text-rose">
                         <X size={14} />
                       </button>
                     ) : null}
@@ -413,31 +478,11 @@ function BlockSection({
               )
             })}
           </ul>
-        ) : (
-          <p className="py-3 text-[14px] text-dim">nothing planned. add one if the block is yours.</p>
-        )}
+        ) : null}
         {adding ? (
-          <form
-            className="expand mt-3 grid grid-cols-[1fr_88px_auto] gap-2"
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-          >
-            <label className="sr-only" htmlFor={`add-${block.key}`}>
-              target
-            </label>
-            <input id={`add-${block.key}`} autoFocus className="field" placeholder="what will you finish?" value={text} onChange={(e) => setText(e.target.value)} />
-            <label className="sr-only" htmlFor={`h-${block.key}`}>
-              hours
-            </label>
-            <input id={`h-${block.key}`} className="field num" type="number" step="0.25" min="0" value={hours} onChange={(e) => setHours(Number(e.target.value) || 0)} />
-            <button type="submit" className="btn solid px-4 text-[14px]">
-              add
-            </button>
-          </form>
+          addForm
         ) : (
-          <button type="button" onClick={() => setAdding(true)} className="mt-2 inline-flex items-center gap-1.5 py-1.5 text-[13px] text-dim hover:text-ego-soft">
+          <button type="button" onClick={() => setAdding(true)} className="mt-2 inline-flex min-h-8 items-center gap-1.5 text-[13px] text-dim hover:text-ego-soft">
             <Plus size={14} /> add a target
           </button>
         )}
@@ -498,8 +543,16 @@ function QuickLog({ date, defaultCh }: { date: string; defaultCh: string }) {
         ) : null}
       </p>
       <div className="mt-5 grid grid-cols-2 gap-4">
-        <Stepper label="attempted" value={att} onChange={(v) => setAtt(v)} quick={5} />
-        <Stepper label="correct" value={cor} onChange={(v) => setCor(Math.min(v, Math.max(att, v)))} max={att || undefined} quick={5} />
+        <Stepper
+          label="attempted"
+          value={att}
+          onChange={(v) => {
+            setAtt(v)
+            setCor((c) => Math.min(c, v))
+          }}
+          quick={5}
+        />
+        <Stepper label="correct" value={cor} onChange={setCor} max={att} quick={5} />
       </div>
       <button type="button" disabled={att <= 0} onClick={submit} className="btn solid mt-5 w-full py-3 text-[14px] disabled:opacity-40">
         log {att > 0 ? att : ''} pyqs
