@@ -9,8 +9,13 @@ export interface Video {
   stamps?: Stamp[]
 }
 
-/** chapter one-shots, the lecture of record for each new chapter */
+/** the lecture of record for each new chapter: jee wallah one-shots, unacademy for electro, ionic, d & f */
 export const LECTURES: Record<string, Video> = {
+  electro: { id: 'DRBc_9_Xj-k', len: 22933, by: 'unacademy jee nexus', stamps: [[598, "basic definitions"], [1595, "electrochemical cells"], [4873, "representation of cells"], [6611, "types of electrode"], [12970, "electrode potential"], [19638, "nernst equation"]] },
+  ionic: { id: 'YNoxkyTOx-s', len: 39126, by: 'unacademy jee nexus', stamps: [[664, "acid base theories"], [2918, "self ionization of water"], [4820, "ph calculations"], [18374, "dissociation of weak acid and weak base"], [21256, "mixture of weak acids and weak bases"], [28060, "salt hydrolysis"], [35422, "buffer solutions"]] },
+  dnf: { id: 'I-X4j_5FPuI', len: 20595, by: 'unacademy jee nexus', stamps: [[867, "general electronic configuration"], [2118, "physical properties of d and f block"], [2162, "ncert table data"], [6525, "general properties of d and f block elements"], [9683, "potassium dichromate"], [12718, "potassium permanganate"], [16852, "f-block elements"], [17125, "lanthanoids"], [19351, "actinoids"]] },
+  wo: { id: 'k8IyQgwDdUk', len: 18472, by: 'jee wallah', stamps: [[348, "huygens principle"], [902, "wavefront"], [1836, "wave equation"], [3910, "interference"], [5950, "young's double slit experiment"], [10175, "shape of fringes"], [13820, "polarisation of light"], [16265, "diffraction of light"]] },
+  waves: { id: '853QJObBo74', len: 27286, by: 'jee wallah', stamps: [[487, "travelling wave equation"], [2786, "wave parameters"], [3013, "wave velocity, particle velocity and slope"], [6608, "wave velocity"], [6763, "transverse wave velocity"], [8485, "longitudinal wave and longitudinal wave velocity"], [9639, "pressure wave"], [9920, "energy transfer in string"], [10308, "intensity"], [11036, "wave reflection and refraction"], [12076, "wave interference"], [21630, "resonance"], [22028, "sonometer"], [23596, "resonance tube"], [25937, "doppler's effect"]] },
   ac: { id: 'FImh-a0673s', len: 26490, by: 'jee wallah', stamps: [[400, "current electricity"], [565, "alternating current"], [1010, "generation of ac"], [2230, "average current"], [3508, "root mean square current"], [6528, "superposition & questions"], [8960, "heat dissipated & loss"], [9550, "battery"], [10080, "purely resistive circuit"], [11112, "purely capacitive circuit"], [14635, "purely inductor"], [15950, "rlc circuit"], [17210, "questions & pyqs"], [19896, "power supply by source and power dissipated in rlc"], [20568, "pyqs"], [21210, "resonance"], [23685, "pyqs"], [25260, "transformer"]] },
   semis: { id: 'rdnWOyqZTy4', len: 19066, by: 'jee wallah', stamps: [[225, "logic gates"], [4461, "semiconductor"], [6786, "energy bands"], [7164, "n type"], [7938, "p type"], [8446, "pn junction diode"], [8624, "resistivity and conductivity"], [9782, "pn junction diode"], [10317, "forward and reverse bias"], [12000, "junction biased"], [12402, "behavior of pn junction with bias"], [12544, "comparison between forward and reverse bias"], [14227, "rectifier"], [15000, "zener diode"], [16104, "reverse breakdown"]] },
   emw: { id: '8TnzQkZrztQ', len: 10655, by: 'jee wallah', stamps: [[249, "emw basics"], [2768, "maxwell equation"], [3323, "electromagnetic wave"], [6426, "pyqs"], [7216, "energy density"], [7850, "intensity"], [9488, "electromagnetic spectrum"], [10175, "poynting vector"]] },
@@ -74,15 +79,15 @@ const ex = (s: string) => `https://questions.examside.com/past-years/jee/jee-mai
 
 export const LINKS: Record<string, ChapterLinks> = {
   ac: { lecture: 'ac', revision: 'ac', pyq: [ex('physics/alternating-current')] },
-  waves: { revision: 'waves', pyq: [ex('physics/waves')] },
-  wo: { revision: 'wo', tandav: [['phys12', 4405, 'wave optics']], pyq: [ex('physics/wave-optics')] },
+  waves: { lecture: 'waves', revision: 'waves', pyq: [ex('physics/waves')] },
+  wo: { lecture: 'wo', revision: 'wo', tandav: [['phys12', 4405, 'wave optics']], pyq: [ex('physics/wave-optics')] },
   emw: { lecture: 'emw', revision: 'emw', tandav: [['phys12', 545, 'em waves']], pyq: [ex('physics/electromagnetic-waves')] },
   mp1: { lecture: 'mp', lectureFrom: 0, lectureTo: 33580, revision: 'mp', pyq: [ex('physics/dual-nature-of-radiation'), ex('physics/atoms-and-nuclei')] },
   mp2: { lecture: 'mp', lectureFrom: 33580, revision: 'mp', pyq: [ex('physics/atoms-and-nuclei')] },
   semis: { lecture: 'semis', revision: 'semis', pyq: [ex('physics/electronic-devices')] },
-  electro: { revision: 'electro', tandav: [['pc', 34135, 'electrochemistry']], pyq: [ex('chemistry/electrochemistry')] },
-  ionic: { revision: 'ionic', tandav: [['pc', 26260, 'ionic equilibrium']], pyq: [ex('chemistry/ionic-equilibrium')] },
-  dnf: { revision: 'dnf', tandav: [['ioc', 23646, 'kmno4, k2cr2o7, lanthanoids']], pyq: [ex('chemistry/d-and-f-block-elements')] },
+  electro: { lecture: 'electro', revision: 'electro', tandav: [['pc', 34135, 'electrochemistry']], pyq: [ex('chemistry/electrochemistry')] },
+  ionic: { lecture: 'ionic', revision: 'ionic', tandav: [['pc', 26260, 'ionic equilibrium']], pyq: [ex('chemistry/ionic-equilibrium')] },
+  dnf: { lecture: 'dnf', revision: 'dnf', tandav: [['ioc', 23646, 'kmno4, k2cr2o7, lanthanoids']], pyq: [ex('chemistry/d-and-f-block-elements')] },
   amines: { lecture: 'amines', revision: 'amines', pyq: [ex('chemistry/compounds-containing-nitrogen')] },
   bio: { lecture: 'bio', revision: 'bio', tandav: [['oc', 25115, 'biomolecules']], pyq: [ex('chemistry/biomolecules')] },
   mat: { lecture: 'mat', revision: 'mat', tandav: [['math12', 238, 'matrices']], pyq: [ex('mathematics/matrices-and-determinants')] },

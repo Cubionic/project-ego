@@ -104,9 +104,11 @@ const safeStorage: StateStorage = {
   },
 }
 
-// v1 shipped lecture-hour estimates. v2 swaps in the real video lengths, but only where the
+// v1 shipped lecture-hour estimates. v2 and v3 swap in the real video lengths, but only where the
 // saved number is still the old estimate, so a length you already corrected stays yours.
-const V1_ESTIMATES: Record<string, { hours: number; watched: number }> = {
+const OLD_ESTIMATES: Record<string, { hours: number; watched: number }> = {
+  waves: { hours: 8, watched: 7.2 },
+  wo: { hours: 6, watched: 0 },
   ac: { hours: 7, watched: 2.8 },
   semis: { hours: 5, watched: 0 },
   emw: { hours: 2, watched: 0 },
@@ -125,7 +127,7 @@ const V1_ESTIMATES: Record<string, { hours: number; watched: number }> = {
 export function withRealHours(chapters: Record<string, ChapterState>): Record<string, ChapterState> {
   const out = { ...chapters }
   for (const c of CHAPTERS) {
-    const old = V1_ESTIMATES[c.id]
+    const old = OLD_ESTIMATES[c.id]
     const st = out[c.id]
     if (!old || !st || st.hours !== old.hours) continue
     const watched = st.watched === old.watched ? c.watched : Math.min(st.watched, c.hours)
@@ -230,12 +232,12 @@ export const useEgo = create<EgoState>()(
     }),
     {
       name: 'project-ego',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => safeStorage),
       partialize: (s) => pickData(s),
       migrate: (persisted, version) => {
         const p = (persisted ?? {}) as Partial<Data>
-        if (version < 2 && p.chapters) p.chapters = withRealHours(p.chapters)
+        if (version < 3 && p.chapters) p.chapters = withRealHours(p.chapters)
         return p as unknown as EgoState
       },
       merge: (persisted, current) => {

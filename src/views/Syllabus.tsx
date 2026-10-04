@@ -60,7 +60,7 @@ export default function Syllabus() {
         {spare >= 0
           ? `need ${Math.round(need)}h for what is left (lecture time x 1.5, plus an hour of notes per chapter). you have ${have}h before oct 22.`
           : `over by ${-spare}h. cut biomolecules, em waves and statistics to ncert + pyqs first, then drop lakshya.`}{' '}
-        waves, wave optics, vector & 3d and aod are still estimates.
+        vector & 3d and aod are still estimates.
       </p>
 
       <section className="mt-14 grid grid-cols-1 gap-x-10 gap-y-14 lg:grid-cols-3">

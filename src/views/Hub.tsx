@@ -323,6 +323,7 @@ function LectureFold({ subject, open }: { subject: Subject; open?: boolean }) {
                   <p className={`text-[14px] ${st?.closedOn ? 'text-mute' : 'text-smoke'}`}>{c.name}</p>
                   <p className="mt-0.5 num text-[12px] text-mute">
                     {lt > 0 ? `${fmtHours(Math.round(lt * 100) / 100)}h left of ${fmtHours(st?.hours ?? c.hours)}h` : 'watched'}
+                    {v && (l?.lectureFrom != null || l?.lectureTo != null) ? `, part of one ${clock(v.len)} video` : ''}
                   </p>
                 </div>
                 {v && resume && lt > 0 ? (

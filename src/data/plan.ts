@@ -47,7 +47,7 @@ export interface ChapterDef {
   name: string
   subject: Subject
   group: 'new' | 'weak' | 'backlog'
-  /** lecture hours: real video lengths (oct 4), waves, wave optics, vector & 3d and aod are still estimates */
+  /** lecture hours: real video lengths (oct 4), only vector & 3d and aod are estimates */
   hours: number
   /** hours already watched on oct 4 */
   watched: number
@@ -57,8 +57,8 @@ export interface ChapterDef {
 
 export const CHAPTERS: ChapterDef[] = [
   { id: 'ac', name: 'alternating current', subject: 'phys', group: 'new', hours: 7.36, watched: 2.94, cap: 4 },
-  { id: 'waves', name: 'waves on string & sound', subject: 'phys', group: 'new', hours: 8, watched: 7.2, cap: 4 },
-  { id: 'wo', name: 'wave optics', subject: 'phys', group: 'new', hours: 6, watched: 0, cap: 4 },
+  { id: 'waves', name: 'waves on string & sound', subject: 'phys', group: 'new', hours: 7.58, watched: 7.2, cap: 4 },
+  { id: 'wo', name: 'wave optics', subject: 'phys', group: 'new', hours: 5.13, watched: 0, cap: 4 },
   { id: 'emw', name: 'em waves', subject: 'phys', group: 'new', hours: 2.96, watched: 0, cap: 2 },
   { id: 'mp1', name: 'modern physics 1', subject: 'phys', group: 'new', hours: 9.33, watched: 0, cap: 5 },
   { id: 'mp2', name: 'modern physics 2', subject: 'phys', group: 'new', hours: 1.37, watched: 0, cap: 5 },
