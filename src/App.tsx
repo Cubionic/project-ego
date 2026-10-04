@@ -69,9 +69,12 @@ export default function App() {
     <div className="relative min-h-[100dvh] bg-ink font-sans text-smoke">
       <div className="atmosphere" aria-hidden />
       <div className="grain" aria-hidden />
+      <a href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus() }} className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-ego focus:px-4 focus:py-2 focus:text-ink">
+        skip to content
+      </a>
       <TopBar view={view} setView={setView} streak={streak} countdown={countdown} />
       <Ticker items={ticker} />
-      <main key={view} className="view-enter relative z-10 mx-auto max-w-[1400px] px-4 md:px-8">
+      <main id="main" tabIndex={-1} key={view} className="view-enter focus:outline-none relative z-10 mx-auto max-w-[1400px] px-4 md:px-8">
         {view === 'today' && <Today />}
         {view === 'syllabus' && <Syllabus />}
         {view === 'progress' && <Progress />}

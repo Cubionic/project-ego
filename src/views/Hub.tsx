@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowUpRight, ChevronDown, Download, ImagePlus, Trash2, Upload } from 'lucide-react'
 import { RULES, SOURCES } from '../data/content'
 import { CHAPTERS, NEW_CHAPTERS, SUBJECT_NAME, type ChapterDef, type Subject } from '../data/plan'
@@ -21,8 +21,6 @@ const SECTIONS = [
   ['revision', 'revision'],
   ['pyqs', 'pyqs'],
   ['papers', 'papers'],
-  ['art', 'your art'],
-  ['data', 'data'],
 ] as const
 
 export default function Hub() {
@@ -30,31 +28,41 @@ export default function Hub() {
   const left = NEW_CHAPTERS.reduce((a, c) => a + Math.max(0, (chapters[c.id]?.hours ?? 0) - (chapters[c.id]?.watched ?? 0)), 0)
   const tandavHours = TANDAV_ORDER.reduce((a, k) => a + TANDAV[k].len, 0) / 3600
   const jump = (id: string) => document.getElementById(`hub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const active = useActiveSection(SECTIONS.map(([id]) => `hub-${id}`))
 
   return (
     <div className="pt-10 md:pt-14">
-      <header className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        <h1 className="font-serif text-[clamp(2.4rem,5.5vw,4.6rem)] leading-[1.06] tracking-[-0.025em] lg:col-span-6">
-          <Words text="everything, one tap away." />
+      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+        <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] leading-[1.06] tracking-[-0.025em]">
+          <Words text="the library." />
         </h1>
-        <dl className="grid grid-cols-3 gap-6 self-end lg:col-span-6">
+        <dl className="grid w-full max-w-[520px] grid-cols-3 gap-6">
           <Stat label="lecture left" value={`${fmtHours(Math.round(left * 10) / 10)}h`} sub={`${fmtHours(Math.round(left * 15) / 10)}h at 1.5x`} />
           <Stat label="mahatandav" value={`${Math.round(tandavHours)}h`} sub={`${TANDAV_ORDER.length} videos`} />
           <Stat label="pyq pages" value={String(Object.values(LINKS).reduce((a, l) => a + l.pyq.length, 0))} sub={`${Object.keys(LINKS).length} chapters`} />
         </dl>
       </header>
 
-      <nav aria-label="hub sections" className="sticky top-16 z-20 -mx-4 mt-10 flex gap-2 overflow-x-auto border-b border-line bg-ink px-4 py-3 md:mx-0 md:px-0">
-        {SECTIONS.map(([id, name]) => (
-          <button key={id} type="button" onClick={() => jump(id)} className="press min-h-8 shrink-0 border border-line px-3 text-[13px] text-mute hover:border-ego hover:text-smoke">
-            {name}
-          </button>
-        ))}
+      <nav aria-label="hub sections" className="sticky top-16 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-line bg-ink px-4 py-2.5 md:mx-0 md:px-0">
+        {SECTIONS.map(([id, name]) => {
+          const on = active === `hub-${id}`
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => jump(id)}
+              aria-current={on ? 'true' : undefined}
+              className={`press min-h-8 shrink-0 border px-3 text-[13px] ${on ? 'border-ego text-smoke' : 'border-line text-mute hover:border-ego hover:text-smoke'}`}
+            >
+              {name}
+            </button>
+          )
+        })}
       </nav>
 
       <Section id="lectures" title="lectures" aside="chapter one-shots. the resume link starts where your watched hours end.">
         {SUBJECTS.map((s) => (
-          <LectureFold key={s} subject={s} />
+          <LectureFold key={s} subject={s} open />
         ))}
       </Section>
 
@@ -94,7 +102,18 @@ export default function Hub() {
             <SourceList items={g.items} />
           </Fold>
         ))}
-        <Fold title="the rules" meta={`${RULES.length} sets`}>
+      </Section>
+
+      <div id="hub-art" className="scroll-mt-32">
+        <ArtBoard />
+      </div>
+
+      <section id="hub-data" className="mt-20 grid scroll-mt-32 grid-cols-1 gap-16 lg:grid-cols-2">
+        <DataTools />
+        <div>
+          <SectionTitle>reference</SectionTitle>
+          <div className="border-b border-line">
+            <Fold title="the rules" meta={`${RULES.length} sets`}>
           <div className="grid grid-cols-1 gap-x-10 gap-y-8 pt-2 sm:grid-cols-2 lg:grid-cols-3">
             {RULES.map((r) => (
               <div key={r.title}>
@@ -110,17 +129,8 @@ export default function Hub() {
             ))}
           </div>
         </Fold>
-      </Section>
-
-      <div id="hub-art" className="scroll-mt-32">
-        <ArtBoard />
-      </div>
-
-      <section id="hub-data" className="mt-20 grid scroll-mt-32 grid-cols-1 gap-16 lg:grid-cols-2">
-        <DataTools />
-        <div>
-          <SectionTitle>shortcuts</SectionTitle>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-[14px]">
+          </div>
+          <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-[13px]">
             {[
               ['1 to 5', 'switch between today, syllabus, progress, tests, hub'],
               ['[ and ]', 'previous and next day on today'],
@@ -154,9 +164,9 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
 
 function Section({ id, title, aside, children }: { id: string; title: string; aside: string; children: ReactNode }) {
   return (
-    <section id={`hub-${id}`} className="mt-16 scroll-mt-32">
+    <section id={`hub-${id}`} className="mt-14 max-w-[920px] scroll-mt-32">
       <h2 className="font-serif text-[26px] leading-[1.15] tracking-[-0.01em] md:text-[30px]">{title}</h2>
-      <p className="mt-1 mb-5 max-w-[70ch] text-[13px] text-mute">{aside}</p>
+      <p className="mt-1 mb-4 max-w-[70ch] text-[13px] text-mute">{aside}</p>
       <div className="border-b border-line">{children}</div>
     </section>
   )
@@ -194,7 +204,7 @@ function Row({ name, sub, children }: { name: ReactNode; sub?: ReactNode; childr
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line/60 py-2.5 first:border-t-0">
       <div className="min-w-0 flex-1 basis-48">
         <p className="text-[14px] text-smoke">{name}</p>
-        {sub ? <p className="mt-0.5 text-[12px] text-dim">{sub}</p> : null}
+        {sub ? <p className="mt-0.5 text-[12px] text-mute">{sub}</p> : null}
       </div>
       <div className="flex flex-wrap items-center gap-2">{children}</div>
     </li>
@@ -209,7 +219,7 @@ function StampGrid({ id, stamps, mark }: { id: string; stamps: Stamp[]; mark?: S
         return (
           <li key={t}>
             <a href={yt(id, t)} target="_blank" rel="noreferrer" className="group flex min-h-8 items-baseline gap-3 py-1 text-[13px]">
-              <span className={`num w-[4.2rem] shrink-0 ${m ? 'text-ego-soft' : 'text-dim'}`}>{clock(t)}</span>
+              <span className={`num w-[4.2rem] shrink-0 ${m ? 'text-ego-soft' : 'text-mute'}`}>{clock(t)}</span>
               <span className={`group-hover:text-ego-soft ${m ? 'text-smoke' : 'text-mute'}`}>
                 {m ? <span className="mr-1.5 inline-block h-1.5 w-1.5 translate-y-[-2px] bg-ego" aria-label="in your plan" /> : null}
                 {label}
@@ -236,13 +246,14 @@ function SourceList({ items }: { items: { name: string; url?: string; note?: str
 
 /* ---------- sections ---------- */
 
-function LectureFold({ subject }: { subject: Subject }) {
+function LectureFold({ subject, open }: { subject: Subject; open?: boolean }) {
   const chapters = useEgo((s) => s.chapters)
   const list = NEW_CHAPTERS.filter((c) => c.subject === subject)
   const leftOf = (c: ChapterDef) => Math.max(0, (chapters[c.id]?.hours ?? 0) - (chapters[c.id]?.watched ?? 0))
   const left = list.reduce((a, c) => a + leftOf(c), 0)
   return (
     <Fold
+      open={open}
       title={SUBJECT_NAME[subject]}
       meta={
         <>
@@ -263,11 +274,11 @@ function LectureFold({ subject }: { subject: Subject }) {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <div className="min-w-0 flex-1 basis-48">
                   <p className={`text-[14px] ${st?.closedOn ? 'text-mute' : 'text-smoke'}`}>{c.name}</p>
-                  <p className="mt-0.5 num text-[12px] text-dim">
+                  <p className="mt-0.5 num text-[12px] text-mute">
                     {fmtHours(st?.hours ?? c.hours)}h long,{' '}
                     {lt > 0 ? (
                       <>
-                        <span className="text-mute">{fmtHours(Math.round(lt * 100) / 100)}h left</span>, {fmtHours(Math.round(lt * 150) / 100)}h at 1.5x
+                        <span className="text-smoke">{fmtHours(Math.round(lt * 100) / 100)}h left</span>, {fmtHours(Math.round(lt * 150) / 100)}h at 1.5x
                       </>
                     ) : (
                       'watched'
@@ -275,11 +286,11 @@ function LectureFold({ subject }: { subject: Subject }) {
                     {v ? `, ${v.by}` : ''}
                   </p>
                 </div>
-                {v && resume && lt > 0 ? <Ext href={resume.href}>{resume.label}</Ext> : v ? <Ext href={yt(v.id, l?.lectureFrom)} quiet>lecture</Ext> : <span className="text-[12px] text-dim">no lecture linked</span>}
+                {v && resume && lt > 0 ? <Ext href={resume.href}>{resume.label}</Ext> : v ? <Ext href={yt(v.id, l?.lectureFrom)} quiet>lecture</Ext> : null}
               </div>
               {v && stamps?.length ? (
                 <details className="fold mt-1">
-                  <summary className="inline-flex min-h-8 items-center gap-1.5 text-[12px] text-dim hover:text-ego-soft">
+                  <summary className="inline-flex min-h-8 items-center gap-1.5 text-[13px] text-mute hover:text-ego-soft">
                     {stamps.length} topics <ChevronDown size={13} className="chev" aria-hidden />
                   </summary>
                   <div className="pt-1 pb-2">
@@ -330,7 +341,7 @@ function RevisionFold({ subject }: { subject: Subject }) {
           const l = LINKS[c.id]
           const r = l.revision ? REVISIONS[l.revision] : undefined
           return (
-            <Row key={c.id} name={c.name} sub={GROUP_TAG[c.group]}>
+            <Row key={c.id} name={c.name} sub={c.group === 'new' ? undefined : GROUP_TAG[c.group]}>
               {r ? <Ext href={yt(r.id)}>{clock(r.len)}</Ext> : null}
               {l.tandav?.map(([vid, t, label]) => (
                 <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet>
@@ -362,9 +373,13 @@ function PyqFold({ subject }: { subject: Subject }) {
               key={c.id}
               name={c.name}
               sub={
-                <>
-                  {GROUP_TAG[c.group]}, <span className={accTone(p)}>{p == null ? 'none logged' : `${p}% on ${a!.att}`}</span>
-                </>
+                c.group === 'new' && p == null ? undefined : (
+                  <>
+                    {c.group === 'new' ? '' : GROUP_TAG[c.group]}
+                    {c.group !== 'new' && p != null ? ', ' : ''}
+                    {p != null ? <span className={accTone(p)}>{`${p}% on ${a!.att}`}</span> : null}
+                  </>
+                )
               }
             >
               {pages.map((href) => (
@@ -524,4 +539,23 @@ function DataTools() {
       />
     </div>
   )
+}
+
+/** id of the section whose top has passed under the sticky bars */
+function useActiveSection(ids: string[]) {
+  const [active, setActive] = useState<string | null>(null)
+  const key = ids.join('|')
+  useEffect(() => {
+    const els = ids.map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e)
+    const pick = () => {
+      let cur: string | null = null
+      for (const el of els) if (el.getBoundingClientRect().top < 160) cur = el.id
+      setActive(cur)
+    }
+    pick()
+    window.addEventListener('scroll', pick, { passive: true })
+    return () => window.removeEventListener('scroll', pick)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  return active
 }

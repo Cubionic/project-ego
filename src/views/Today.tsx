@@ -103,7 +103,7 @@ export default function Today() {
   return (
     <div className="relative">
       {/* ---------- hero ---------- */}
-      <section className="grid grid-cols-1 gap-y-12 gap-x-12 pt-8 md:pt-14 lg:grid-cols-12">
+      <section className="grid grid-cols-1 gap-y-12 gap-x-12 pt-6 md:pt-14 lg:grid-cols-12">
         <div className="flex flex-col lg:col-span-7">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px]">
             <div className="flex items-center border border-line">
@@ -134,15 +134,15 @@ export default function Today() {
             ) : null}
           </div>
 
-          <h1 key={headline(st.pct, rel, date)} className="mt-8 max-w-[15ch] font-serif text-[clamp(2.5rem,6.2vw,5.4rem)] leading-[1.06] tracking-[-0.025em]">
+          <h1 key={headline(st.pct, rel, date)} className="mt-5 max-w-[15ch] font-serif text-[clamp(1.9rem,6.2vw,5.4rem)] leading-[1.06] tracking-[-0.025em] md:mt-8">
             <Words text={headline(st.pct, rel, date)} />
           </h1>
 
-          <div className="mt-auto pt-12">
-            <div className="flex flex-wrap items-end gap-x-12 gap-y-8">
+          <div className="mt-auto pt-6 md:pt-12">
+            <div className="flex flex-wrap items-end gap-x-12 gap-y-5 md:gap-y-8">
               <div>
                 <div className="flex items-start font-serif leading-[0.85]">
-                  <span className="text-[clamp(5.5rem,13vw,10rem)] tracking-[-0.04em]">
+                  <span className="text-[clamp(4rem,13vw,10rem)] tracking-[-0.04em]">
                     <CountUp value={st.pct} />
                   </span>
                   <span className="mt-3 text-[2rem] text-mute">%</span>
@@ -154,28 +154,28 @@ export default function Today() {
                   <div className="h-px bg-ego transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] origin-left" style={{ transform: `scaleX(${st.pct / 100})` }} />
                 </div>
               </div>
-              <dl className="grid grid-cols-2 gap-x-10 gap-y-5 text-[13px]">
+              <dl className="grid w-full grid-cols-4 gap-x-4 gap-y-5 text-[12px] sm:w-auto sm:grid-cols-2 sm:gap-x-10 sm:text-[13px]">
                 <div>
                   <dt className="text-mute">hours earned</dt>
-                  <dd className="mt-1 text-[22px] text-smoke">
+                  <dd className="mt-1 text-[18px] text-smoke sm:text-[22px]">
                     <span className="num">{fmtHours(st.hours)}</span>
                     <span className="text-[14px] text-dim"> / {fmtHours(st.planned)}h</span>
                   </dd>
                 </div>
                 <div>
                   <dt className="text-mute">targets</dt>
-                  <dd className="mt-1 text-[22px] text-smoke">
+                  <dd className="mt-1 text-[18px] text-smoke sm:text-[22px]">
                     <span className="num">{st.completed}</span>
                     <span className="text-[14px] text-dim"> / {st.total}</span>
                   </dd>
                 </div>
                 <div>
                   <dt className="text-mute">pyqs logged</dt>
-                  <dd className="mt-1 text-[22px] num text-smoke">{totalPyq.att}</dd>
+                  <dd className="mt-1 text-[18px] num text-smoke sm:text-[22px]">{totalPyq.att}</dd>
                 </div>
                 <div>
                   <dt className="text-mute">accuracy</dt>
-                  <dd className={`mt-1 text-[22px] num ${accTone(pctOf(totalPyq))}`}>{pctOf(totalPyq) == null ? 'n/a' : `${pctOf(totalPyq)}%`}</dd>
+                  <dd className={`mt-1 text-[18px] num sm:text-[22px] ${accTone(pctOf(totalPyq))}`}>{pctOf(totalPyq) == null ? 'n/a' : `${pctOf(totalPyq)}%`}</dd>
                 </div>
               </dl>
             </div>
@@ -197,7 +197,7 @@ export default function Today() {
       <Timeline groups={groups} nowMin={nowMin} current={current} onJump={jump} />
 
       {/* ---------- targets + quick log ---------- */}
-      <section className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-12">
+      <section className="mt-6 grid grid-cols-1 gap-12 md:mt-14 lg:grid-cols-12">
         <div className="lg:col-span-8">
           {groups.map(({ b, tasks: bt, name, done: d }) => (
             <BlockSection
@@ -286,7 +286,7 @@ function Timeline({
   const showNow = nowMin != null && nowMin >= DAY_START - 60 && nowMin <= DAY_END
   const clampedNow = nowMin == null ? 0 : Math.max(DAY_START, Math.min(DAY_END, nowMin))
   return (
-    <section className="mt-24 md:mt-20" aria-label="the day">
+    <section className="mt-10 lg:mt-20" aria-label="the day">
       <div className="relative h-[88px]">
         <div className="absolute inset-x-0 top-[50px] h-px bg-line" />
         {BREAKS.map((br) => (
@@ -408,13 +408,13 @@ function BlockSection({
     )
 
   return (
-    <section ref={refEl} className={`scroll-mt-24 grid grid-cols-1 gap-x-8 border-t py-8 md:grid-cols-[200px_1fr] ${isNow ? 'border-ego' : 'border-line'}`}>
-      <header className="mb-4 md:mb-0">
+    <section ref={refEl} className={`scroll-mt-24 grid grid-cols-1 gap-x-8 border-t py-5 md:grid-cols-[200px_1fr] md:py-8 ${isNow ? 'border-ego' : 'border-line'}`}>
+      <header className="mb-2 flex flex-wrap items-baseline gap-x-3 md:mb-0 md:block">
         <p className="num text-[13px] text-mute">
           {fmtClock(block.start)} to {fmtClock(block.end)}
         </p>
-        <h2 className="mt-1 font-serif text-[24px] leading-tight">{name}</h2>
-        <p className="mt-2 text-[13px]">
+        <h2 className="order-first font-serif text-[22px] leading-tight md:order-none md:mt-1 md:text-[24px]">{name}</h2>
+        <p className="text-[13px] md:mt-2">
           {isNow ? <span className="text-ego-soft">happening now</span> : isNext ? <span className="text-mute">up next</span> : null}
           {isNow || isNext ? <span className="text-dim"> / </span> : null}
           <span className="num text-mute">
