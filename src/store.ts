@@ -104,6 +104,36 @@ const safeStorage: StateStorage = {
   },
 }
 
+// v1 shipped lecture-hour estimates. v2 swaps in the real video lengths, but only where the
+// saved number is still the old estimate, so a length you already corrected stays yours.
+const V1_ESTIMATES: Record<string, { hours: number; watched: number }> = {
+  ac: { hours: 7, watched: 2.8 },
+  semis: { hours: 5, watched: 0 },
+  emw: { hours: 2, watched: 0 },
+  mp1: { hours: 6, watched: 0 },
+  mp2: { hours: 5, watched: 0 },
+  electro: { hours: 7, watched: 0 },
+  ionic: { hours: 7, watched: 0 },
+  dnf: { hours: 5, watched: 0 },
+  amines: { hours: 4, watched: 0 },
+  bio: { hours: 2.5, watched: 0 },
+  mat: { hours: 4, watched: 0 },
+  det: { hours: 4, watched: 0 },
+  prob: { hours: 6, watched: 0 },
+  stats: { hours: 2.5, watched: 0 },
+}
+export function withRealHours(chapters: Record<string, ChapterState>): Record<string, ChapterState> {
+  const out = { ...chapters }
+  for (const c of CHAPTERS) {
+    const old = V1_ESTIMATES[c.id]
+    const st = out[c.id]
+    if (!old || !st || st.hours !== old.hours) continue
+    const watched = st.watched === old.watched ? c.watched : Math.min(st.watched, c.hours)
+    out[c.id] = { ...st, hours: c.hours, watched }
+  }
+  return out
+}
+
 const DATA_KEYS: (keyof Data)[] = ['done', 'moved', 'custom', 'chapters', 'pyq', 'tests', 'art', 'duotone']
 const pickData = (s: Data): Data => Object.fromEntries(DATA_KEYS.map((k) => [k, s[k]])) as unknown as Data
 
@@ -190,7 +220,7 @@ export const useEgo = create<EgoState>()(
         set({
           ...base,
           ...pickData({ ...base, ...r } as Data),
-          chapters: { ...base.chapters, ...r.chapters },
+          chapters: withRealHours({ ...base.chapters, ...r.chapters }),
           art: get().art,
         })
         return true
@@ -200,9 +230,14 @@ export const useEgo = create<EgoState>()(
     }),
     {
       name: 'project-ego',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => safeStorage),
       partialize: (s) => pickData(s),
+      migrate: (persisted, version) => {
+        const p = (persisted ?? {}) as Partial<Data>
+        if (version < 2 && p.chapters) p.chapters = withRealHours(p.chapters)
+        return p as unknown as EgoState
+      },
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<Data>
         return { ...current, ...p, chapters: { ...initialChapters(), ...(p.chapters ?? {}) } }

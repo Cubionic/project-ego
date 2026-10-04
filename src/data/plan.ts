@@ -47,34 +47,34 @@ export interface ChapterDef {
   name: string
   subject: Subject
   group: 'new' | 'weak' | 'backlog'
-  /** lecture hours: rough estimates, replace with real durations in syllabus */
+  /** lecture hours: real video lengths (oct 4), waves, wave optics, vector & 3d and aod are still estimates */
   hours: number
-  /** hours already watched on oct 3 */
+  /** hours already watched on oct 4 */
   watched: number
   /** short note page cap */
   cap: number
 }
 
 export const CHAPTERS: ChapterDef[] = [
-  { id: 'ac', name: 'alternating current', subject: 'phys', group: 'new', hours: 7, watched: 2.8, cap: 4 },
+  { id: 'ac', name: 'alternating current', subject: 'phys', group: 'new', hours: 7.36, watched: 2.94, cap: 4 },
   { id: 'waves', name: 'waves on string & sound', subject: 'phys', group: 'new', hours: 8, watched: 7.2, cap: 4 },
   { id: 'wo', name: 'wave optics', subject: 'phys', group: 'new', hours: 6, watched: 0, cap: 4 },
-  { id: 'emw', name: 'em waves', subject: 'phys', group: 'new', hours: 2, watched: 0, cap: 2 },
-  { id: 'mp1', name: 'modern physics 1', subject: 'phys', group: 'new', hours: 6, watched: 0, cap: 5 },
-  { id: 'mp2', name: 'modern physics 2', subject: 'phys', group: 'new', hours: 5, watched: 0, cap: 5 },
-  { id: 'semis', name: 'semiconductors', subject: 'phys', group: 'new', hours: 5, watched: 0, cap: 4 },
+  { id: 'emw', name: 'em waves', subject: 'phys', group: 'new', hours: 2.96, watched: 0, cap: 2 },
+  { id: 'mp1', name: 'modern physics 1', subject: 'phys', group: 'new', hours: 9.33, watched: 0, cap: 5 },
+  { id: 'mp2', name: 'modern physics 2', subject: 'phys', group: 'new', hours: 1.37, watched: 0, cap: 5 },
+  { id: 'semis', name: 'semiconductors', subject: 'phys', group: 'new', hours: 5.3, watched: 0, cap: 4 },
 
-  { id: 'electro', name: 'electrochemistry', subject: 'chem', group: 'new', hours: 7, watched: 0, cap: 5 },
-  { id: 'ionic', name: 'ionic equilibrium', subject: 'chem', group: 'new', hours: 7, watched: 0, cap: 5 },
-  { id: 'dnf', name: 'd & f block', subject: 'chem', group: 'new', hours: 5, watched: 0, cap: 1 },
-  { id: 'amines', name: 'amines', subject: 'chem', group: 'new', hours: 4, watched: 0, cap: 4 },
-  { id: 'bio', name: 'biomolecules', subject: 'chem', group: 'new', hours: 2.5, watched: 0, cap: 1 },
+  { id: 'electro', name: 'electrochemistry', subject: 'chem', group: 'new', hours: 6.37, watched: 0, cap: 5 },
+  { id: 'ionic', name: 'ionic equilibrium', subject: 'chem', group: 'new', hours: 10.87, watched: 0, cap: 5 },
+  { id: 'dnf', name: 'd & f block', subject: 'chem', group: 'new', hours: 5.72, watched: 0, cap: 1 },
+  { id: 'amines', name: 'amines', subject: 'chem', group: 'new', hours: 3.24, watched: 0, cap: 4 },
+  { id: 'bio', name: 'biomolecules', subject: 'chem', group: 'new', hours: 5.44, watched: 0, cap: 1 },
 
-  { id: 'mat', name: 'matrices', subject: 'math', group: 'new', hours: 4, watched: 0, cap: 4 },
-  { id: 'det', name: 'determinants', subject: 'math', group: 'new', hours: 4, watched: 0, cap: 4 },
+  { id: 'mat', name: 'matrices', subject: 'math', group: 'new', hours: 6.39, watched: 0, cap: 4 },
+  { id: 'det', name: 'determinants', subject: 'math', group: 'new', hours: 5.61, watched: 0, cap: 4 },
   { id: 'v3d', name: 'vector & 3d', subject: 'math', group: 'new', hours: 8, watched: 8, cap: 4 },
-  { id: 'prob', name: 'probability', subject: 'math', group: 'new', hours: 6, watched: 0, cap: 4 },
-  { id: 'stats', name: 'statistics', subject: 'math', group: 'new', hours: 2.5, watched: 0, cap: 2 },
+  { id: 'prob', name: 'probability', subject: 'math', group: 'new', hours: 7.71, watched: 0, cap: 4 },
+  { id: 'stats', name: 'statistics', subject: 'math', group: 'new', hours: 1.74, watched: 0, cap: 2 },
   { id: 'aod', name: "aod: rolle's and lmvt", subject: 'math', group: 'new', hours: 2, watched: 0, cap: 1 },
 
   { id: 'pnc', name: 'pnc', subject: 'math', group: 'weak', hours: 0, watched: 0, cap: 4 },
