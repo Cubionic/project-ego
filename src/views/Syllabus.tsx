@@ -4,7 +4,7 @@ import { useEgo, type ChapterState } from '../store'
 import { accOf, pctOf } from '../lib/derive'
 import { diffDays, fmtHours, fmtShort, studyDate } from '../lib/dates'
 import { Stepper, Words, accTone } from '../components/ui'
-import { LINKS, REVISIONS, taskLink, yt } from '../data/videos'
+import { FULL, LINKS, taskLink, yt } from '../data/videos'
 
 export default function Syllabus() {
   const chapters = useEgo((s) => s.chapters)
@@ -188,7 +188,8 @@ function ChapterLinksRow({ id, watched }: { id: string; watched: number }) {
   const lecture = taskLink('lecture', id, watched)
   const links = [
     lecture,
-    l.revision ? { href: yt(REVISIONS[l.revision].id), label: 'revision' } : null,
+    l.notes?.[0] ? { href: yt(FULL[l.notes[0][0]].id, l.notes[0][1]), label: 'notes source' } : null,
+    l.revision?.[0] ? { href: yt(l.revision[0].id), label: 'revision' } : null,
     ...l.pyq.map((href, i) => ({ href, label: l.pyq.length > 1 ? `pyqs ${i + 1}` : 'pyqs' })),
   ].filter((x): x is { href: string; label: string } => !!x)
   return (

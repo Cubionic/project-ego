@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowUpRight, ChevronDown, Download, ImagePlus, Trash2, Upload } from 'lucide-react'
 import { RULES, SOURCES } from '../data/content'
 import { BLOCKS, CHAPTERS, NEW_CHAPTERS, SUBJECT_NAME, type ChapterDef, type Subject } from '../data/plan'
-import { EXTRAS, LECTURES, LINKS, REVISIONS, TANDAV, clock, taskLink, yt, type Stamp } from '../data/videos'
+import { EDUNITI, EDUNITI_MORE, EXTRAS, FULL, LECTURES, LINKS, PLAYLISTS, clock, taskLink, yt, ytList, type Clip, type Stamp } from '../data/videos'
 import { exportData, useEgo } from '../store'
 import { delArt, useArtUrls } from '../lib/art'
 import { accOf, pctOf } from '../lib/derive'
@@ -14,12 +14,13 @@ import { Words, accTone } from '../components/ui'
 
 const SUBJECTS: Subject[] = ['phys', 'chem', 'math']
 const GROUP_TAG: Record<ChapterDef['group'], string> = { new: 'this month', weak: 'weak 11th', backlog: 'notes backlog' }
-const TANDAV_ORDER = ['phys11', 'phys12', 'pc', 'ioc', 'oc', 'math11', 'math12']
+const FULL_ORDER = ['phys11', 'phys12', 'pc', 'pcf', 'ioc', 'ioc250', 'oc250']
 const SECTIONS = [
   ['lectures', 'lectures'],
   ['notes', 'short notes'],
   ['revision', 'revision'],
   ['pyqs', 'pyqs'],
+  ['eduniti', 'eduniti'],
   ['papers', 'papers'],
   ['tools', 'art and backups'],
 ] as const
@@ -113,33 +114,55 @@ export default function Hub() {
         ))}
       </Section>
 
-      <Section id="notes" title="short notes" aside="mahatandav 2026, pw jee. a whole subject per video. marked parts are in your plan.">
-        {TANDAV_ORDER.map((k) => (
-          <TandavFold key={k} k={k} />
+      <Section id="notes" title="short notes" aside="build notes from these: eduniti formula marathons for physics, mohit ryan sir for pc and ioc. marked parts are in your plan.">
+        {FULL_ORDER.map((k) => (
+          <FullFold key={k} k={k} />
         ))}
       </Section>
 
-      <Section id="revision" title="revision" aside="full-chapter revisions, 20 to 100 minutes, and question marathons.">
+      <Section id="revision" title="revision" aside="short revisions from your playlists and eduniti, chapter by chapter.">
         {SUBJECTS.map((s) => (
           <RevisionFold key={s} subject={s} />
         ))}
-        <Fold title="question marathons" meta={`${EXTRAS.length} videos`}>
+        <Fold title="subject clips" meta={`${EXTRAS.length} videos`}>
           <ul>
             {EXTRAS.map((x) => (
-              <Row key={x.video.id} name={x.name} sub={`${x.note}, ${x.video.by}`}>
-                <Ext href={yt(x.video.id)}>{clock(x.video.len)}</Ext>
+              <Row key={x.clip.id} name={x.clip.label} sub={`${x.group}, ${x.clip.by}`}>
+                <Ext href={yt(x.clip.id)} label={x.clip.label}>
+                  {clock(x.clip.len)}
+                </Ext>
               </Row>
             ))}
           </ul>
         </Fold>
       </Section>
 
-      <Section id="pyqs" title="pyqs" aside="examside chapter pages: every jee main shift, with solutions. blue marks chapters under 60% in your quick log.">
+      <Section id="pyqs" title="pyqs" aside="examside chapter pages, plus video solutions of past papers. blue marks chapters under 60% in your quick log.">
         {SUBJECTS.map((s) => (
           <PyqFold key={s} subject={s} />
         ))}
         <Fold title="pyq banks" meta={`${SOURCES[0].items.length} sites`}>
           <SourceList items={SOURCES[0].items} />
+        </Fold>
+      </Section>
+
+      <Section id="eduniti" title="eduniti physics" aside="the 100 day planner by mohit goenka: one playlist per chapter with formula revision, every year of pyq solutions and a rank booster.">
+        <Fold title="chapter playlists" meta={`${EDUNITI.length} chapters, ${EDUNITI.filter((e) => e.ch.length).length} in your plan`} open>
+          <ul className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
+            {EDUNITI.map((e) => (
+              <Row key={e.list} name={e.name} sub={e.ch.length ? 'in your plan' : undefined}>
+                <Ext href={ytList(e.list)} quiet={!e.ch.length} label={`eduniti ${e.name} playlist`}>
+                  playlist
+                </Ext>
+              </Row>
+            ))}
+          </ul>
+        </Fold>
+        <Fold title="more from eduniti" meta={`${EDUNITI_MORE.length} links`}>
+          <SourceList items={EDUNITI_MORE.map((m) => ({ name: m.name, url: m.href, note: m.note }))} />
+        </Fold>
+        <Fold title="your playlists" meta={`${PLAYLISTS.length} playlists`}>
+          <SourceList items={PLAYLISTS.map((p) => ({ name: p.name, url: ytList(p.list), note: 'youtube.com/@benzotropic' }))} />
         </Fold>
       </Section>
 
@@ -237,14 +260,17 @@ function Ext({ href, children, quiet, label }: { href: string; children: ReactNo
   )
 }
 
-function Row({ name, sub, children }: { name: ReactNode; sub?: ReactNode; children?: ReactNode }) {
+function Row({ name, sub, children, below }: { name: ReactNode; sub?: ReactNode; children?: ReactNode; below?: ReactNode }) {
   return (
-    <li className="flex flex-col gap-x-4 gap-y-2 border-b border-line/60 py-2.5 sm:flex-row sm:items-center">
-      <div className="min-w-0 flex-1">
-        <p className="text-[14px] text-smoke">{name}</p>
-        {sub ? <p className="mt-0.5 text-[12px] text-mute">{sub}</p> : null}
+    <li className="border-b border-line/60 py-2.5">
+      <div className="flex flex-col gap-x-4 gap-y-2 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] text-smoke">{name}</p>
+          {sub ? <p className="mt-0.5 text-[12px] text-mute">{sub}</p> : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">{children}</div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">{children}</div>
+      {below}
     </li>
   )
 }
@@ -354,11 +380,11 @@ function LectureFold({ subject, open }: { subject: Subject; open?: boolean }) {
   )
 }
 
-function TandavFold({ k }: { k: string }) {
-  const v = TANDAV[k]
+function FullFold({ k }: { k: string }) {
+  const v = FULL[k]
   const mark = useMemo(() => {
     const m = new Set<number>()
-    for (const l of Object.values(LINKS)) for (const [vid, t] of l.tandav ?? []) if (vid === k) m.add(t)
+    for (const l of Object.values(LINKS)) for (const [vid, t] of l.notes ?? []) if (vid === k) m.add(t)
     return m
   }, [k])
   return (
@@ -366,40 +392,45 @@ function TandavFold({ k }: { k: string }) {
       title={v.name}
       meta={
         <>
-          {clock(v.len)} <span className="text-dim">/ {v.stamps?.length ?? 0} parts{mark.size ? `, ${mark.size} in plan` : ''}</span>
+          {clock(v.len)} <span className="text-dim">/ {v.group}{mark.size ? `, ${mark.size} in plan` : ''}</span>
         </>
       }
     >
-      <div className="mb-3">
-        <Ext href={yt(v.id)} quiet>
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <Ext href={yt(v.id)} quiet label={`${v.name}, whole video`}>
           whole video
         </Ext>
+        <span className="text-[12px] text-mute">
+          {v.by}. {v.note}.
+        </span>
       </div>
-      <StampGrid id={v.id} stamps={v.stamps ?? []} mark={mark} />
+      {v.stamps?.length ? <StampGrid id={v.id} stamps={v.stamps} mark={mark} /> : null}
     </Fold>
   )
 }
 
+function ClipLinks({ name, clips, kind }: { name: string; clips: Clip[]; kind: string }) {
+  return (
+    <>
+      {clips.map((r) => (
+        <Ext key={r.id} href={yt(r.id)} quiet label={`${name} ${kind}, ${r.label}, ${r.by}, ${clock(r.len)}`}>
+          {r.label} {clock(r.len)}
+        </Ext>
+      ))}
+    </>
+  )
+}
+
 function RevisionFold({ subject }: { subject: Subject }) {
-  const list = CHAPTERS.filter((c) => c.subject === subject && (LINKS[c.id]?.revision || LINKS[c.id]?.tandav?.length))
+  const list = CHAPTERS.filter((c) => c.subject === subject && LINKS[c.id]?.revision?.length)
   return (
     <Fold title={SUBJECT_NAME[subject]} meta={`${list.length} chapters`}>
-      <ul className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
+      <ul>
         {list.map((c) => {
           const l = LINKS[c.id]
-          const r = l.revision ? REVISIONS[l.revision] : undefined
           return (
-            <Row key={c.id} name={c.name} sub={c.group === 'new' ? undefined : GROUP_TAG[c.group]}>
-              {r ? (
-                <Ext href={yt(r.id)} label={`${c.name} revision, ${clock(r.len)}`}>
-                  revision {clock(r.len)}
-                </Ext>
-              ) : null}
-              {l.tandav?.map(([vid, t, label]) => (
-                <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet label={`${c.name} in mahatandav ${TANDAV[vid].name}, from ${clock(t)}`}>
-                  {l.tandav!.length > 1 ? label : 'mahatandav'} {clock(t)}
-                </Ext>
-              ))}
+            <Row key={c.id} name={c.name} sub={c.group === 'new' ? l.revision![0].by : `${GROUP_TAG[c.group]}, ${l.revision![0].by}`}>
+              <ClipLinks name={c.name} clips={l.revision!} kind="revision" />
             </Row>
           )
         })}
@@ -415,15 +446,32 @@ function PyqFold({ subject }: { subject: Subject }) {
   const done = list.reduce((a, c) => a + (acc[c.id]?.att ?? 0), 0)
   return (
     <Fold title={SUBJECT_NAME[subject]} meta={`${list.length} chapters, ${done} logged`}>
-      <ul className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
+      <ul>
         {list.map((c) => {
           const a = acc[c.id]
           const p = pctOf(a)
           const pages = LINKS[c.id].pyq
+          const vids = LINKS[c.id].pyqVideos
           return (
             <Row
               key={c.id}
               name={c.name}
+              below={
+                vids?.length ? (
+                  <details className="fold mt-1">
+                    <summary className="inline-flex min-h-8 items-center gap-1.5 text-[13px] text-mute hover:text-ego-soft">
+                      {vids.length} video {vids.length === 1 ? 'solution' : 'solutions'}, {vids[0].by} <ChevronDown size={13} className="chev" aria-hidden />
+                    </summary>
+                    <div className="flex flex-wrap gap-2 pt-1 pb-2">
+                      {vids.map((r) => (
+                        <Ext key={r.id} href={yt(r.id)} quiet label={`${c.name} pyq solutions, ${r.label}, ${clock(r.len)}`}>
+                          {r.label}
+                        </Ext>
+                      ))}
+                    </div>
+                  </details>
+                ) : null
+              }
               sub={
                 c.group === 'new' && p == null ? undefined : (
                   <>
@@ -620,8 +668,7 @@ function Found({ q }: { q: string }) {
   const topics: { id: string; t: number; label: string; from: string }[] = []
   for (const [k, v] of Object.entries(LECTURES))
     for (const [t, label] of v.stamps ?? []) if (label.includes(q)) topics.push({ id: v.id, t, label, from: `${k === 'mp' ? 'modern physics' : (CHAPTERS.find((c) => LINKS[c.id]?.lecture === k)?.name ?? k)} lecture` })
-  for (const k of TANDAV_ORDER)
-    for (const [t, label] of TANDAV[k].stamps ?? []) if (label.includes(q)) topics.push({ id: TANDAV[k].id, t, label, from: `mahatandav ${TANDAV[k].name}` })
+  for (const k of FULL_ORDER) for (const [t, label] of FULL[k].stamps ?? []) if (label.includes(q)) topics.push({ id: FULL[k].id, t, label, from: FULL[k].name })
   return (
     <section className="mt-8 max-w-[920px]" aria-live="polite">
       <p className="mb-3 text-[13px] text-mute">
@@ -632,7 +679,7 @@ function Found({ q }: { q: string }) {
           const l = LINKS[c.id]
           const st = chapters[c.id]
           const lec = l?.lecture ? taskLink('lecture', c.id, st && st.watched < st.hours ? st.watched : 0) : null
-          const r = l?.revision ? REVISIONS[l.revision] : undefined
+          const r = l?.revision?.[0]
           return (
             <Row key={c.id} name={c.name} sub={`${SUBJECT_NAME[c.subject]}, ${GROUP_TAG[c.group]}`}>
               {lec ? (
@@ -641,13 +688,13 @@ function Found({ q }: { q: string }) {
                 </Ext>
               ) : null}
               {r ? (
-                <Ext href={yt(r.id)} quiet label={`${c.name} revision`}>
+                <Ext href={yt(r.id)} quiet label={`${c.name} revision, ${r.label}`}>
                   revision {clock(r.len)}
                 </Ext>
               ) : null}
-              {l?.tandav?.map(([vid, t]) => (
-                <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet label={`${c.name} in mahatandav`}>
-                  mahatandav {clock(t)}
+              {l?.notes?.map(([vid, t]) => (
+                <Ext key={`${vid}${t}`} href={yt(FULL[vid].id, t)} quiet label={`${c.name} notes source, ${FULL[vid].name}`}>
+                  notes {clock(t)}
                 </Ext>
               ))}
               {l?.pyq.map((href) => (
