@@ -40,7 +40,7 @@ export function TopBar({
     <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 border-b border-line bg-ink">
       <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-6 px-4 md:px-8">
         <button type="button" onClick={() => setView('today')} className="flex min-h-8 items-center gap-2 font-serif text-[19px] tracking-[-0.01em]">
-          <span className="inline-block h-2.5 w-2.5 translate-y-[-1px] border-2 border-ego" aria-hidden />
+          <img src="/logo-64.webp" srcSet="/logo-64.webp 1x, /logo-128.webp 2x" width={30} height={30} alt="" className="h-[30px] w-[30px]" />
           project ego
         </button>
         <nav className="relative hidden md:flex items-center gap-1" aria-label="main">
