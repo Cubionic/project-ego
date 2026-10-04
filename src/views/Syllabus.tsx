@@ -109,7 +109,7 @@ function ChapterRow({ def, st, acc, open, onToggle }: { def: ChapterDef; st: Cha
           <span className="mt-1 block text-[12px] text-dim">{status}</span>
         </span>
         <span className="text-right">
-          <span className={`block num text-[15px] ${accTone(p)}`}>{p == null ? 'no pyqs' : `${p}%`}</span>
+          {p == null ? null : <span className={`block num text-[15px] ${accTone(p)}`}>{p}%</span>}
           {acc?.att ? <span className="block num text-[12px] text-dim">{acc.att} pyqs</span> : null}
         </span>
         <span className="col-span-2 mt-4 block h-[2px] bg-line" aria-hidden>

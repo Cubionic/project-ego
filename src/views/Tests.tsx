@@ -55,7 +55,7 @@ export default function Tests() {
 
       <section className="mt-16 grid grid-cols-1 gap-16 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <SectionTitle aside={<span className="num">{full.length} full papers</span>}>score, out of 300</SectionTitle>
+          <SectionTitle aside={<span className="num">{full.length} full {full.length === 1 ? 'paper' : 'papers'}</span>}>score, out of 300</SectionTitle>
           {full.length ? (
             <LineChart
               ariaLabel="full paper scores over time, out of 300"

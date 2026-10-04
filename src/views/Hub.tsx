@@ -42,6 +42,8 @@ export default function Hub() {
   const jump = (id: string) => document.getElementById(`hub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const active = useActiveSection(SECTIONS.map(([id]) => `hub-${id}`))
   const chipBar = useRef<HTMLElement>(null)
+  const [q, setQ] = useState('')
+  const query = q.trim().toLowerCase()
   useEffect(() => {
     const bar = chipBar.current
     const chip = bar?.querySelector<HTMLElement>('[aria-current]')
@@ -50,7 +52,7 @@ export default function Hub() {
 
   return (
     <div className="pt-10 md:pt-14">
-      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+      <header className="flex max-w-[920px] flex-wrap items-end justify-between gap-x-10 gap-y-5">
         <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] leading-[1.06] tracking-[-0.025em]">
           <Words text="the library." />
         </h1>
@@ -71,7 +73,22 @@ export default function Hub() {
         </dl>
       </header>
 
-      <nav ref={chipBar} aria-label="hub sections" className="sticky top-16 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-line bg-ink px-4 py-2.5 md:mx-0 md:px-0">
+      <div className="mt-6 max-w-[920px]">
+        <label htmlFor="hub-find" className="sr-only">
+          find a chapter or topic
+        </label>
+        <input
+          id="hub-find"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === 'Escape' && setQ('')}
+          placeholder="find a chapter or topic"
+          className="h-10 w-full border border-line bg-ink px-2.5 text-[13px] text-smoke placeholder:text-dim hover:border-mute focus:border-ego md:w-80"
+        />
+      </div>
+
+      <nav ref={chipBar} aria-label="hub sections" className="sticky top-16 z-20 -mx-4 mt-3 flex max-w-[calc(920px+2rem)] items-center gap-1.5 overflow-x-auto border-b border-line bg-ink px-4 py-2.5 md:mx-0 md:max-w-[920px] md:px-0">
         {SECTIONS.map(([id, name]) => {
           const on = active === `hub-${id}`
           return (
@@ -87,8 +104,10 @@ export default function Hub() {
           )
         })}
       </nav>
+      {query ? <Found q={query} /> : null}
+      <div hidden={!!query}>
 
-      <Section id="lectures" title="lectures" aside="chapter one-shots. the resume link starts where your watched hours end.">
+      <Section id="lectures" title="lectures" aside="chapter one-shots. resume links open at your watched hours.">
         {SUBJECTS.map((s) => (
           <LectureFold key={s} subject={s} open={s === now} />
         ))}
@@ -132,11 +151,13 @@ export default function Hub() {
         ))}
       </Section>
 
+      </div>
+
       <Section id="tools" title="art, backups, rules" aside="your images, your data file, and the plan's rules.">
         <Fold title="your art" meta={`${artCount} of 12`}>
           <ArtBoard />
         </Fold>
-        <Fold title="backups" meta="download every sunday">
+        <Fold title="backups" meta="json file">
           <DataTools />
         </Fold>
         <Fold title="the rules" meta={`${RULES.length} sets`}>
@@ -200,24 +221,26 @@ function Fold({ title, meta, children, open }: { title: ReactNode; meta?: ReactN
   )
 }
 
-function Ext({ href, children, quiet }: { href: string; children: ReactNode; quiet?: boolean }) {
+function Ext({ href, children, quiet, label }: { href: string; children: ReactNode; quiet?: boolean; label?: string }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
+      aria-label={label ? `${label}, opens in a new tab` : undefined}
       className={`inline-flex min-h-8 items-center gap-1 whitespace-nowrap border px-2.5 text-[13px] num ${quiet ? 'border-line text-mute hover:border-ego hover:text-smoke' : 'border-ego/60 text-ego-soft hover:border-ego hover:text-smoke'}`}
     >
       {children}
       <ArrowUpRight size={13} aria-hidden />
+      {label ? null : <span className="sr-only">, opens in a new tab</span>}
     </a>
   )
 }
 
 function Row({ name, sub, children }: { name: ReactNode; sub?: ReactNode; children?: ReactNode }) {
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line/60 py-2.5">
-      <div className="min-w-0 flex-1 basis-48">
+    <li className="flex flex-col gap-x-4 gap-y-2 border-b border-line/60 py-2.5 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
         <p className="text-[14px] text-smoke">{name}</p>
         {sub ? <p className="mt-0.5 text-[12px] text-mute">{sub}</p> : null}
       </div>
@@ -236,7 +259,12 @@ function StampGrid({ id, stamps, mark }: { id: string; stamps: Stamp[]; mark?: S
             <a href={yt(id, t)} target="_blank" rel="noreferrer" className="group flex min-h-8 items-baseline gap-3 py-1 text-[13px]">
               <span className={`num w-[4.2rem] shrink-0 ${m ? 'text-ego-soft' : 'text-mute'}`}>{clock(t)}</span>
               <span className={`group-hover:text-ego-soft ${m ? 'text-smoke' : 'text-mute'}`}>
-                {m ? <span className="mr-1.5 inline-block h-1.5 w-1.5 translate-y-[-2px] bg-ego" aria-label="in your plan" /> : null}
+                {m ? (
+                  <>
+                    <span className="mr-1.5 inline-block h-1.5 w-1.5 translate-y-[-2px] bg-ego" aria-hidden />
+                    <span className="sr-only">in your plan: </span>
+                  </>
+                ) : null}
                 {label}
               </span>
             </a>
@@ -252,7 +280,11 @@ function SourceList({ items }: { items: { name: string; url?: string; note?: str
     <ul>
       {items.map((s) => (
         <Row key={s.name} name={s.name} sub={s.note}>
-          {s.url ? <Ext href={s.url} quiet>open</Ext> : null}
+          {s.url ? (
+            <Ext href={s.url} quiet label={s.name}>
+              open
+            </Ext>
+          ) : null}
         </Row>
       ))}
     </ul>
@@ -290,18 +322,18 @@ function LectureFold({ subject, open }: { subject: Subject; open?: boolean }) {
                 <div className="min-w-0 flex-1 basis-48">
                   <p className={`text-[14px] ${st?.closedOn ? 'text-mute' : 'text-smoke'}`}>{c.name}</p>
                   <p className="mt-0.5 num text-[12px] text-mute">
-                    {fmtHours(st?.hours ?? c.hours)}h long,{' '}
-                    {lt > 0 ? (
-                      <>
-                        <span className="text-smoke">{fmtHours(Math.round(lt * 100) / 100)}h left</span>, {fmtHours(Math.round(lt * 150) / 100)}h at 1.5x
-                      </>
-                    ) : (
-                      'watched'
-                    )}
-                    {v ? `, ${v.by}` : ''}
+                    {lt > 0 ? `${fmtHours(Math.round(lt * 100) / 100)}h left of ${fmtHours(st?.hours ?? c.hours)}h` : 'watched'}
                   </p>
                 </div>
-                {v && resume && lt > 0 ? <Ext href={resume.href}>{resume.label}</Ext> : v ? <Ext href={yt(v.id, l?.lectureFrom)} quiet>lecture</Ext> : <span className="text-[12px] text-dim">no link yet</span>}
+                {v && resume && lt > 0 ? (
+                  <Ext href={resume.href} label={`${c.name}, ${resume.label}`}>
+                    {resume.label}
+                  </Ext>
+                ) : v ? (
+                  <Ext href={yt(v.id, l?.lectureFrom)} quiet label={`${c.name} lecture`}>
+                    lecture
+                  </Ext>
+                ) : <span className="text-[12px] text-dim">no link yet</span>}
               </div>
               {v && stamps?.length ? (
                 <details className="fold mt-1">
@@ -357,9 +389,13 @@ function RevisionFold({ subject }: { subject: Subject }) {
           const r = l.revision ? REVISIONS[l.revision] : undefined
           return (
             <Row key={c.id} name={c.name} sub={c.group === 'new' ? undefined : GROUP_TAG[c.group]}>
-              {r ? <Ext href={yt(r.id)}>revision {clock(r.len)}</Ext> : null}
+              {r ? (
+                <Ext href={yt(r.id)} label={`${c.name} revision, ${clock(r.len)}`}>
+                  revision {clock(r.len)}
+                </Ext>
+              ) : null}
               {l.tandav?.map(([vid, t, label]) => (
-                <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet>
+                <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet label={`${c.name} in mahatandav ${TANDAV[vid].name}, from ${clock(t)}`}>
                   {l.tandav!.length > 1 ? label : 'mahatandav'} {clock(t)}
                 </Ext>
               ))}
@@ -398,7 +434,7 @@ function PyqFold({ subject }: { subject: Subject }) {
               }
             >
               {pages.map((href) => (
-                <Ext key={href} href={href} quiet={p == null || p >= 60}>
+                <Ext key={href} href={href} quiet={p == null || p >= 60} label={`${c.name} pyqs${pages.length > 1 ? `, ${href.split('/').pop()!.replace(/-/g, ' ')}` : ''}`}>
                   {pages.length > 1 ? href.split('/').pop()!.replace(/-/g, ' ') : 'pyqs'}
                 </Ext>
               ))}
@@ -499,7 +535,7 @@ function DataTools() {
 
   return (
     <div>
-      <p className={`max-w-[60ch] text-[13px] ${cloud.status === 'error' ? 'text-rose' : 'text-mute'}`}>{syncLine} download a backup every sunday so a cleared cache never costs you a month.</p>
+      <p className={`max-w-[60ch] text-[13px] ${cloud.status === 'error' ? 'text-rose' : 'text-mute'}`}>{syncLine} the backup file holds every log except art.</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <button type="button" onClick={download} className="btn inline-flex items-center gap-2 border border-line px-4 py-2.5 text-[14px]">
           <Download size={16} /> save backup
@@ -574,4 +610,61 @@ function subjectNow(): Subject {
   const order: Record<string, Subject> = { b1: 'math', b2: 'phys', b4: 'chem' }
   const b = BLOCKS.find((x) => order[x.key] && m < x.end) ?? BLOCKS[0]
   return order[b.key] ?? 'math'
+}
+
+/** every link for chapters and topics that match, so one search replaces opening three sections */
+function Found({ q }: { q: string }) {
+  const chapters = useEgo((s) => s.chapters)
+  const hits = CHAPTERS.filter((c) => c.name.includes(q) || c.id === q)
+  const topics: { id: string; t: number; label: string; from: string }[] = []
+  for (const [k, v] of Object.entries(LECTURES))
+    for (const [t, label] of v.stamps ?? []) if (label.includes(q)) topics.push({ id: v.id, t, label, from: `${k === 'mp' ? 'modern physics' : (CHAPTERS.find((c) => LINKS[c.id]?.lecture === k)?.name ?? k)} lecture` })
+  for (const k of TANDAV_ORDER)
+    for (const [t, label] of TANDAV[k].stamps ?? []) if (label.includes(q)) topics.push({ id: TANDAV[k].id, t, label, from: `mahatandav ${TANDAV[k].name}` })
+  return (
+    <section className="mt-8 max-w-[920px]" aria-live="polite">
+      <p className="mb-3 text-[13px] text-mute">
+        {hits.length} {hits.length === 1 ? 'chapter' : 'chapters'}, {topics.length} {topics.length === 1 ? 'topic' : 'topics'}. esc clears.
+      </p>
+      <ul className="border-t border-line">
+        {hits.map((c) => {
+          const l = LINKS[c.id]
+          const st = chapters[c.id]
+          const lec = l?.lecture ? taskLink('lecture', c.id, st && st.watched < st.hours ? st.watched : 0) : null
+          const r = l?.revision ? REVISIONS[l.revision] : undefined
+          return (
+            <Row key={c.id} name={c.name} sub={`${SUBJECT_NAME[c.subject]}, ${GROUP_TAG[c.group]}`}>
+              {lec ? (
+                <Ext href={lec.href} label={`${c.name}, ${lec.label}`}>
+                  {lec.label}
+                </Ext>
+              ) : null}
+              {r ? (
+                <Ext href={yt(r.id)} quiet label={`${c.name} revision`}>
+                  revision {clock(r.len)}
+                </Ext>
+              ) : null}
+              {l?.tandav?.map(([vid, t]) => (
+                <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet label={`${c.name} in mahatandav`}>
+                  mahatandav {clock(t)}
+                </Ext>
+              ))}
+              {l?.pyq.map((href) => (
+                <Ext key={href} href={href} quiet label={`${c.name} pyqs`}>
+                  pyqs
+                </Ext>
+              ))}
+            </Row>
+          )
+        })}
+        {topics.slice(0, 24).map((x) => (
+          <Row key={x.id + x.t} name={x.label} sub={x.from}>
+            <Ext href={yt(x.id, x.t)} quiet label={`${x.label}, ${x.from}`}>
+              {clock(x.t)}
+            </Ext>
+          </Row>
+        ))}
+      </ul>
+    </section>
+  )
 }
