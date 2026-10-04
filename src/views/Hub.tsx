@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowUpRight, ChevronDown, Download, ImagePlus, Trash2, Upload } from 'lucide-react'
 import { RULES, SOURCES } from '../data/content'
-import { CHAPTERS, NEW_CHAPTERS, SUBJECT_NAME, type ChapterDef, type Subject } from '../data/plan'
+import { BLOCKS, CHAPTERS, NEW_CHAPTERS, SUBJECT_NAME, type ChapterDef, type Subject } from '../data/plan'
 import { EXTRAS, LECTURES, LINKS, REVISIONS, TANDAV, clock, taskLink, yt, type Stamp } from '../data/videos'
 import { exportData, useEgo } from '../store'
 import { delArt, useArtUrls } from '../lib/art'
 import { accOf, pctOf } from '../lib/derive'
-import { fmtHours, studyDate } from '../lib/dates'
+import { fmtHours, minutesIntoStudyDay, studyDate } from '../lib/dates'
 import { hosted, saveFile } from '../lib/platform'
 import { useCloudStatus } from '../lib/cloud'
 import { addArtFiles } from '../components/ArtFrame'
-import { SectionTitle, Words, accTone } from '../components/ui'
+import { Words, accTone } from '../components/ui'
 
 const SUBJECTS: Subject[] = ['phys', 'chem', 'math']
 const GROUP_TAG: Record<ChapterDef['group'], string> = { new: 'this month', weak: 'weak 11th', backlog: 'notes backlog' }
@@ -21,14 +21,32 @@ const SECTIONS = [
   ['revision', 'revision'],
   ['pyqs', 'pyqs'],
   ['papers', 'papers'],
+  ['tools', 'art and backups'],
 ] as const
 
 export default function Hub() {
   const chapters = useEgo((s) => s.chapters)
   const left = NEW_CHAPTERS.reduce((a, c) => a + Math.max(0, (chapters[c.id]?.hours ?? 0) - (chapters[c.id]?.watched ?? 0)), 0)
-  const tandavHours = TANDAV_ORDER.reduce((a, k) => a + TANDAV[k].len, 0) / 3600
+  const artCount = useEgo((s) => s.art.length)
+  const now = subjectNow()
+  const resume = useMemo(() => {
+    for (const c of NEW_CHAPTERS) {
+      if (c.subject !== now || !LINKS[c.id]?.lecture) continue
+      const st = chapters[c.id]
+      if (!st || st.closedOn || st.watched >= st.hours) continue
+      const link = taskLink('lecture', c.id, st.watched)
+      if (link) return { ch: c, link }
+    }
+    return null
+  }, [chapters, now])
   const jump = (id: string) => document.getElementById(`hub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const active = useActiveSection(SECTIONS.map(([id]) => `hub-${id}`))
+  const chipBar = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const bar = chipBar.current
+    const chip = bar?.querySelector<HTMLElement>('[aria-current]')
+    if (bar && chip) bar.scrollTo({ left: chip.offsetLeft - bar.clientWidth / 2 + chip.offsetWidth / 2, behavior: 'smooth' })
+  }, [active])
 
   return (
     <div className="pt-10 md:pt-14">
@@ -36,14 +54,24 @@ export default function Hub() {
         <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] leading-[1.06] tracking-[-0.025em]">
           <Words text="the library." />
         </h1>
-        <dl className="grid w-full max-w-[520px] grid-cols-3 gap-6">
+        <dl className="grid w-full max-w-[560px] grid-cols-3 gap-6">
           <Stat label="lecture left" value={`${fmtHours(Math.round(left * 10) / 10)}h`} sub={`${fmtHours(Math.round(left * 15) / 10)}h at 1.5x`} />
-          <Stat label="mahatandav" value={`${Math.round(tandavHours)}h`} sub={`${TANDAV_ORDER.length} videos`} />
-          <Stat label="pyq pages" value={String(Object.values(LINKS).reduce((a, l) => a + l.pyq.length, 0))} sub={`${Object.keys(LINKS).length} chapters`} />
+          <div className="col-span-2 border-t border-line pt-3">
+            <dt className="text-[12px] text-mute">resume, {SUBJECT_NAME[now]}</dt>
+            {resume ? (
+              <dd className="mt-1.5">
+                <Ext href={resume.link.href}>
+                  {resume.ch.name}, {resume.link.label === 'lecture' ? 'from the start' : resume.link.label.replace('lecture ', '')}
+                </Ext>
+              </dd>
+            ) : (
+              <dd className="mt-1 text-[14px] text-mute">every linked {SUBJECT_NAME[now]} lecture is watched.</dd>
+            )}
+          </div>
         </dl>
       </header>
 
-      <nav aria-label="hub sections" className="sticky top-16 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-line bg-ink px-4 py-2.5 md:mx-0 md:px-0">
+      <nav ref={chipBar} aria-label="hub sections" className="sticky top-16 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-line bg-ink px-4 py-2.5 md:mx-0 md:px-0">
         {SECTIONS.map(([id, name]) => {
           const on = active === `hub-${id}`
           return (
@@ -62,7 +90,7 @@ export default function Hub() {
 
       <Section id="lectures" title="lectures" aside="chapter one-shots. the resume link starts where your watched hours end.">
         {SUBJECTS.map((s) => (
-          <LectureFold key={s} subject={s} open />
+          <LectureFold key={s} subject={s} open={s === now} />
         ))}
       </Section>
 
@@ -87,7 +115,7 @@ export default function Hub() {
         </Fold>
       </Section>
 
-      <Section id="pyqs" title="pyqs" aside="examside chapter pages: every jee main shift, with solutions. your accuracy from quick log.">
+      <Section id="pyqs" title="pyqs" aside="examside chapter pages: every jee main shift, with solutions. blue marks chapters under 60% in your quick log.">
         {SUBJECTS.map((s) => (
           <PyqFold key={s} subject={s} />
         ))}
@@ -104,16 +132,14 @@ export default function Hub() {
         ))}
       </Section>
 
-      <div id="hub-art" className="scroll-mt-32">
-        <ArtBoard />
-      </div>
-
-      <section id="hub-data" className="mt-20 grid scroll-mt-32 grid-cols-1 gap-16 lg:grid-cols-2">
-        <DataTools />
-        <div>
-          <SectionTitle>reference</SectionTitle>
-          <div className="border-b border-line">
-            <Fold title="the rules" meta={`${RULES.length} sets`}>
+      <Section id="tools" title="art, backups, rules" aside="your images, your data file, and the plan's rules.">
+        <Fold title="your art" meta={`${artCount} of 12`}>
+          <ArtBoard />
+        </Fold>
+        <Fold title="backups" meta="download every sunday">
+          <DataTools />
+        </Fold>
+        <Fold title="the rules" meta={`${RULES.length} sets`}>
           <div className="grid grid-cols-1 gap-x-10 gap-y-8 pt-2 sm:grid-cols-2 lg:grid-cols-3">
             {RULES.map((r) => (
               <div key={r.title}>
@@ -129,23 +155,12 @@ export default function Hub() {
             ))}
           </div>
         </Fold>
-          </div>
-          <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-[13px]">
-            {[
-              ['1 to 5', 'switch between today, syllabus, progress, tests, hub'],
-              ['[ and ]', 'previous and next day on today'],
-              ['t', 'jump back to today'],
-            ].map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt>
-                  <kbd className="num border border-line px-2 py-0.5 text-[12px] text-smoke">{k}</kbd>
-                </dt>
-                <dd className="text-mute">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+      </Section>
+      <p className="mt-6 text-[12px] text-mute">
+        keys: <kbd className="num border border-line px-1.5 text-smoke">1</kbd> to <kbd className="num border border-line px-1.5 text-smoke">5</kbd> switch views,{' '}
+        <kbd className="num border border-line px-1.5 text-smoke">[</kbd> <kbd className="num border border-line px-1.5 text-smoke">]</kbd> change day,{' '}
+        <kbd className="num border border-line px-1.5 text-smoke">t</kbd> today.
+      </p>
     </div>
   )
 }
@@ -201,7 +216,7 @@ function Ext({ href, children, quiet }: { href: string; children: ReactNode; qui
 
 function Row({ name, sub, children }: { name: ReactNode; sub?: ReactNode; children?: ReactNode }) {
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line/60 py-2.5 first:border-t-0">
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line/60 py-2.5">
       <div className="min-w-0 flex-1 basis-48">
         <p className="text-[14px] text-smoke">{name}</p>
         {sub ? <p className="mt-0.5 text-[12px] text-mute">{sub}</p> : null}
@@ -286,7 +301,7 @@ function LectureFold({ subject, open }: { subject: Subject; open?: boolean }) {
                     {v ? `, ${v.by}` : ''}
                   </p>
                 </div>
-                {v && resume && lt > 0 ? <Ext href={resume.href}>{resume.label}</Ext> : v ? <Ext href={yt(v.id, l?.lectureFrom)} quiet>lecture</Ext> : null}
+                {v && resume && lt > 0 ? <Ext href={resume.href}>{resume.label}</Ext> : v ? <Ext href={yt(v.id, l?.lectureFrom)} quiet>lecture</Ext> : <span className="text-[12px] text-dim">no link yet</span>}
               </div>
               {v && stamps?.length ? (
                 <details className="fold mt-1">
@@ -336,13 +351,13 @@ function RevisionFold({ subject }: { subject: Subject }) {
   const list = CHAPTERS.filter((c) => c.subject === subject && (LINKS[c.id]?.revision || LINKS[c.id]?.tandav?.length))
   return (
     <Fold title={SUBJECT_NAME[subject]} meta={`${list.length} chapters`}>
-      <ul>
+      <ul className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
         {list.map((c) => {
           const l = LINKS[c.id]
           const r = l.revision ? REVISIONS[l.revision] : undefined
           return (
             <Row key={c.id} name={c.name} sub={c.group === 'new' ? undefined : GROUP_TAG[c.group]}>
-              {r ? <Ext href={yt(r.id)}>{clock(r.len)}</Ext> : null}
+              {r ? <Ext href={yt(r.id)}>revision {clock(r.len)}</Ext> : null}
               {l.tandav?.map(([vid, t, label]) => (
                 <Ext key={`${vid}${t}`} href={yt(TANDAV[vid].id, t)} quiet>
                   {l.tandav!.length > 1 ? label : 'mahatandav'} {clock(t)}
@@ -363,7 +378,7 @@ function PyqFold({ subject }: { subject: Subject }) {
   const done = list.reduce((a, c) => a + (acc[c.id]?.att ?? 0), 0)
   return (
     <Fold title={SUBJECT_NAME[subject]} meta={`${list.length} chapters, ${done} logged`}>
-      <ul>
+      <ul className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
         {list.map((c) => {
           const a = acc[c.id]
           const p = pctOf(a)
@@ -383,7 +398,7 @@ function PyqFold({ subject }: { subject: Subject }) {
               }
             >
               {pages.map((href) => (
-                <Ext key={href} href={href} quiet={p != null && p >= 80}>
+                <Ext key={href} href={href} quiet={p == null || p >= 60}>
                   {pages.length > 1 ? href.split('/').pop()!.replace(/-/g, ' ') : 'pyqs'}
                 </Ext>
               ))}
@@ -406,20 +421,14 @@ function ArtBoard() {
   const input = useRef<HTMLInputElement>(null)
   const [err, setErr] = useState('')
   return (
-    <section className="mt-20">
-      <SectionTitle
-        aside={
-          <label className="flex min-h-8 cursor-pointer items-center gap-2">
-            <input type="checkbox" className="h-4 w-4 accent-[#5b78ff]" checked={duo} onChange={(e) => setDuo(e.target.checked)} />
-            duotone
-          </label>
-        }
-      >
-        your art
-      </SectionTitle>
-      <p className="-mt-3 mb-6 max-w-[62ch] text-[13px] text-mute">
-        up to 12 images. today shows a different one each day. files stay in this browser and are not part of the backup file.
-      </p>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-[62ch] text-[13px] text-mute">up to 12 images. today shows a different one each day. files stay in this browser and are not part of the backup file.</p>
+        <label className="flex min-h-8 cursor-pointer items-center gap-2 text-[13px] text-mute">
+          <input type="checkbox" className="h-4 w-4 accent-[#5b78ff]" checked={duo} onChange={(e) => setDuo(e.target.checked)} />
+          duotone
+        </label>
+      </div>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {ids.map((id) => (
           <figure key={id} className="group relative aspect-[4/5] overflow-hidden border border-line bg-night">
@@ -462,7 +471,7 @@ function ArtBoard() {
           e.target.value = ''
         }}
       />
-    </section>
+    </div>
   )
 }
 
@@ -490,7 +499,6 @@ function DataTools() {
 
   return (
     <div>
-      <SectionTitle>your data</SectionTitle>
       <p className={`max-w-[60ch] text-[13px] ${cloud.status === 'error' ? 'text-rose' : 'text-mute'}`}>{syncLine} download a backup every sunday so a cleared cache never costs you a month.</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <button type="button" onClick={download} className="btn inline-flex items-center gap-2 border border-line px-4 py-2.5 text-[14px]">
@@ -558,4 +566,12 @@ function useActiveSection(ids: string[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
   return active
+}
+
+/** the subject of the block running now, or the next one: its lecture fold opens first */
+function subjectNow(): Subject {
+  const m = minutesIntoStudyDay()
+  const order: Record<string, Subject> = { b1: 'math', b2: 'phys', b4: 'chem' }
+  const b = BLOCKS.find((x) => order[x.key] && m < x.end) ?? BLOCKS[0]
+  return order[b.key] ?? 'math'
 }

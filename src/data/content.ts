@@ -37,7 +37,6 @@ export const SOURCES: { group: string; items: Source[] }[] = [
     group: 'your material',
     items: [
       { name: 'eduniti list', url: 'https://drive.google.com/file/d/102Np_tW2VKAMvGVUpeovsLpeUYjNMQsf/view', note: 'the lectures inside the click link' },
-      { name: 'pw lakshya jee 2025, physics', note: 'only for chapters the one-shots skip or teach badly' },
     ],
   },
 ]
